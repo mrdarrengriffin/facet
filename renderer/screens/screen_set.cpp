@@ -6,7 +6,8 @@
 //                       component, body, up to 4 lines), so a screen with no options yet still says what it is
 //            "source"   List row "Source" + the source's name (core/sources.h); more than one source = a chevron and
 //                       a tap opens the Bottom sheet with the screen's sources (name; status = the kind, "needs <setup>"
-//                       for a direct source that needs setting up). Built-in screens read "Built in". When the
+//                       for a direct source that needs setting up; a Home Assistant integration that is not set up
+//                       is listed greyed, not pickable, "Not set up in Home Assistant"). Built-in screens read "Built in". When the
 //                       sources set the spec's "source" parameter (C51: the adapter, core/sources.h adapter()), this
 //                       row is the one Source: a pick keeps "source" and "params.source", a spec with a "sample"
 //                       option and no sample source gets "Sample (previews)", and the parameter is not repeated below.
@@ -44,6 +45,7 @@
 #include "fw.h"
 #include "fx.h"
 #include "spec.h"
+#include <set>
 #include "sources.h"
 #include "device.h"
 #include "sheet.h"
@@ -102,6 +104,9 @@ std::string label_of(const std::string &opt) {  // a select option shown: "cd" -
 // "up", "set", "retry", "" = nothing), rebuilt by fill_ha
 struct Pick {
   std::string key; std::vector<std::string> ids, names, status, sets; lv_obj_t *row = nullptr; std::string title; int sel = 0;
+  std::set<std::string> off;  // ids shown greyed, not pickable (a Home Assistant integration that is not set up, #156)
+  std::map<std::string, std::pair<std::string, std::string>> detect;  // id -> its integration + domain (sources.json detect)
+  std::map<std::string, std::string> status0;  // id -> its status line when it is set up
   bool ha = false, multi = false, auto_ok = false, tried = false;
   std::string dom, prefix, cur;     // cur: the single pick's value ("auto" = Auto)
   std::vector<std::string> chosen;  // multi: the picks
@@ -200,6 +205,20 @@ void fill_ha(Pick &p) {
       if (!p.multi && e->id == p.cur) p.sel = (int) p.ids.size() - 1;
     }
 }
+// the Source's Home Assistant integrations not set up (#156): still listed, greyed, "Not set up in Home Assistant", so
+// the user sees what they could add; checked again each time the sheet opens (an integration added meanwhile)
+void grey_unset(Pick &p) {
+  namespace hl = fw::dev::ha_link;
+  for (size_t i = 0; i < p.ids.size(); i++) {
+    auto d = p.detect.find(p.ids[i]);
+    if (d == p.detect.end()) continue;
+    hl::reg_fetch(d->second.second);
+    const std::vector<hl::RegRow> *r = hl::reg(d->second.second);
+    const bool set_up = !r || std::any_of(r->begin(), r->end(), [&](const hl::RegRow &e) { return e.platform == d->second.first; });
+    if (set_up) p.off.erase(p.ids[i]), p.status[i] = p.status0[p.ids[i]];
+    else p.off.insert(p.ids[i]), p.status[i] = "Not set up in Home Assistant";
+  }
+}
 void sheet_props(Page *pg, int k, bool open, Doc &d) {
   d["overlay"] = true;
   d["open"] = open ? "open" : "closed";
@@ -214,6 +233,7 @@ void sheet_props(Page *pg, int k, bool open, Doc &d) {
     // (entities) rings each chosen one, a choose-one list the selected one
     const bool letter = p.ha && p.ids[i].rfind("g:", 0) == 0;
     it["icon"] = letter ? "chevron" : "none", it["name"] = p.names[i].c_str(), it["status"] = p.status[i].c_str();
+    if (p.off.count(p.ids[i])) it["state"] = "disabled";
     if (p.multi && !letter)  // a pick-many list: its checkbox says it (no "chosen" word)
       it["selected"] = p.ids[i].rfind("e:", 0) == 0 && std::find(p.chosen.begin(), p.chosen.end(), p.ids[i].substr(2)) != p.chosen.end();
   }
@@ -293,20 +313,14 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     }
     pk.status.push_back(st);
   }
-  {  // an integration's source only when Home Assistant has it (its registry, once read; until then all are offered)
-    namespace hl = fw::dev::ha_link;
+  {  // an integration's source is pickable only when Home Assistant has it (its registry, once read; until then all are)
     size_t k = 0;
     for (ArduinoJson::JsonVariantConst x : srcs) {
       const std::string in = x["detect"]["integration"] | "", dom = x["detect"]["domain"] | "";
-      bool keep = true;
-      if (!in.empty() && !dom.empty()) {
-        hl::reg_fetch(dom);
-        if (const std::vector<hl::RegRow> *r = hl::reg(dom))
-          keep = std::any_of(r->begin(), r->end(), [&](const hl::RegRow &e) { return e.platform == in; });
-      }
-      if (!keep && (pk.ids[k] != (entry["source"] | ""))) pk.sets[k].clear();  // dropped below, as a source with no adapter
+      if (!in.empty() && !dom.empty()) pk.detect[pk.ids[k]] = {in, dom}, pk.status0[pk.ids[k]] = pk.status[k];
       k++;
     }
+    grey_unset(pk);
   }
   if (linked)  // only the sources this firmware has an adapter for: a planned one (Spotify, an iCal link) picked here
     for (size_t i = pk.ids.size(); i-- > 0;)  // left the screen with nothing to read (Offline, its settings gone)
@@ -504,6 +518,7 @@ void build_page(lv_obj_t *parent, fw::Props p) {
       pg->open = (int) (intptr_t) lv_obj_get_user_data(row);
       Pick &p = pg->picks[pg->open];
       if (p.ha) p.prefix.clear(), p.tried = false, fill_ha(p), pg->seen = hl::rev();
+      if (!p.detect.empty()) grey_unset(p);
       Doc d;
       sheet_props(pg, pg->open, true, d);
       fw::update_child(fw::find("bottom_sheet"), pg->sheet, d.as<fw::Props>());

@@ -52,6 +52,28 @@ export default {
       t.eq(rows.filter((c) => (c.props?.icon ?? 'none') !== 'none').length, 0, 'no icon at the start of any row');
       t.eq(comps(t, 'radio').filter((r) => t.visible(r) && radioOn(t, r)).length, 1, 'one radio on (the chosen source)');
     } },
+    { name: 'Overhead > Source: an integration not set up in Home Assistant is listed greyed, not pickable; set up = pickable (#156)', async run(t) {
+      const run = async (platform) => {
+        t.ha.s['sensor.test_flights'] = { '': '3', friendly_name: 'Flights', _platform: platform };
+        t.ha.answers = true;
+        await t.device({ v: 2, rev: 9, start: 'h', pages: [
+          { id: 'h', kind: 'home', name: 'Home', cards: [{ t: 'page', page: 'overhead', size: 'l' }] },
+          { id: 'overhead', kind: 'overhead', params: { source: 'adsb_lol' } }] });
+        t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+        act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'overhead' } });
+        for (let i = 0; i < 3; i++) { t.wait(800); t.b.tick(8); t.ha.push(); t.b.settle(400); }
+        t.tap(/^Source$/); t.b.settle(1200);
+        t.ok(t.part('picker_row', 'FlightRadar24'), 'FlightRadar24 is listed');
+        if (platform !== 'flightradar24') t.has(t.texts(), /not set up in home assistant/i, 'says why');
+        else t.hasNot(t.texts(), /not set up in home assistant/i, 'no reason once set up');
+        t.tap('FlightRadar24'); t.b.settle(1200);
+        return deck(t).pages.find((p) => p.id === 'overhead').params?.source;
+      };
+      const off = await run('dump1090');
+      t.eq(off, 'adsb_lol', 'not set up: a tap does not pick it');
+      const on = await run('flightradar24');
+      t.eq(on, 'fr24', 'set up: a tap picks it');
+    } },
     { name: 'no Card on Home row: a screen\'s card is added and removed like any card; old decks keep their cards', async run(t) {
       await t.device();
       const before = deck(t).pages.find((p) => p.kind === 'home').cards.filter((c) => c.page === 'moon').length;

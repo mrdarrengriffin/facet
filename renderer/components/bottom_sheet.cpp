@@ -14,7 +14,7 @@
 // screen (Page: the Header + List rows, "Settings"); the Speaker and
 // Theme rows open their sheets (their chevron tap plays open), a pick updates the row's value. Props: open (open = it
 // opens on build, so the 1.8 s demo reset replays it; closed = tap a row), list, title, selected, screen. Internal:
-// `items` (array of {icon, name, status}: the caller's own list instead of the built-in ones; a pick sends
+// `items` (array of {icon, name, status, state}: state "disabled" = greyed and not pickable; the caller's own list instead of the built-in ones; a pick sends
 // LV_EVENT_VALUE_CHANGED to the overlay, param = the index; with `selected` = the index ringed (-1 = none), `stay` = a pick keeps
 // it open; the Settings screen uses this), `rows` + `row_h` (host rows: the caller's own rows, `rows` of `row_h` px
 // for the panel's height; every fill sends LV_EVENT_REFRESH to the overlay with the list as the param, the caller
@@ -66,7 +66,7 @@ struct Sheet {
   lv_obj_t *trigger[2] = {nullptr, nullptr};  // the screen rows that open each list (their value shows the pick)
   // items (a caller's own list, e.g. the Settings screen): replaces the built-in lists; a pick sends
   // LV_EVENT_VALUE_CHANGED to the overlay with the index as the param; stay = a pick does not close (sound packs)
-  std::vector<std::string> items;  // icon, name, status per item
+  std::vector<std::string> items;  // icon, name, status, state per item (state: default, or disabled = greyed, not pickable)
   int item_sel = 0;
   std::vector<bool> item_on;  // items that say "selected" themselves (a pick-many list): each one's radio; else item_sel
   bool custom = false, stay = false;
@@ -91,10 +91,10 @@ void refit(Sheet *s) {
   h += (n > 1 ? n - 1 : 0) * lv_obj_get_style_pad_row(s->list, LV_PART_MAIN);
   fw::sheet::fit(s->ov, 1, std::max(h, 1));
 }
-int n_opts(const Sheet *s) { return s->host_rows >= 0 ? s->host_rows : s->custom ? (int) s->items.size() / 3 : LISTS[s->which].n; }
+int n_opts(const Sheet *s) { return s->host_rows >= 0 ? s->host_rows : s->custom ? (int) s->items.size() / 4 : LISTS[s->which].n; }
 Option opt(const Sheet *s, int i) {
   if (!s->custom) return LISTS[s->which].opts[i];
-  return {s->items[3 * i].c_str(), s->items[3 * i + 1].c_str(), s->items[3 * i + 2].c_str(), "dim"};
+  return {s->items[4 * i].c_str(), s->items[4 * i + 1].c_str(), s->items[4 * i + 2].c_str(), "dim"};
 }
 
 // the screen's rows (List rows): Speaker / Theme show the pick as their value
@@ -118,6 +118,7 @@ void option_props(const Sheet *s, int i, int sel, Doc &d) {
   d["name"] = o.name;
   d["status"] = o.status;
   d["tone"] = o.tone;
+  if (s->custom && 4 * i + 3 < (int) s->items.size() && s->items[4 * i + 3] == "disabled") d["state"] = "disabled";  // greyed, not pickable
   const bool many = s->custom && !s->item_on.empty();  // a pick-many list: checkboxes (radios are for one choice)
   d["selected"] = s->custom && i < (int) s->item_on.size() ? (bool) s->item_on[(size_t) i] : (many ? false : i == sel);
   if (many && i < (int) s->item_on.size()) d["mark"] = "check";
@@ -185,7 +186,8 @@ void choices(Sheet *s, fw::Props p) {
       s->items.push_back(it["icon"] | "none");
       s->items.push_back(it["name"] | "");
       s->items.push_back(it["status"] | "");
-      if (it["selected"].is<bool>()) s->item_on.resize(s->items.size() / 3, false), s->item_on.back() = it["selected"].as<bool>();
+      s->items.push_back(it["state"] | "default");
+      if (it["selected"].is<bool>()) s->item_on.resize(s->items.size() / 4, false), s->item_on.back() = it["selected"].as<bool>();
     }
     s->item_sel = sel < 0 ? -1 : std::min(sel, std::max(0, n_opts(s) - 1));  // -1 = none ringed (a list of choices to narrow)
     s->stay = p["stay"] | false;
