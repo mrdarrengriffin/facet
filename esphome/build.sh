@@ -5,6 +5,7 @@
 # the panel's editor (workbench/scripts/editor-device.mjs into gen/<board>/facet_wb, FW_WEB=0 skips it),
 # gen/settings.yaml (firmware/settings_yaml.mjs) and, on a board with a speaker, the sound bank in
 # components/facet_audio (firmware/sound_bank.mjs, only when stale). All of it is generated, none of it committed.
+# compile then appends the editor files to the images (firmware/web_append.mjs: they stay in flash, #185).
 # Needs Node (renderer/tools: npm ci), the font rasteriser venv (renderer/tools/venv.sh) and `esphome` on PATH
 # (or $ESPHOME). FACET_VERSION = this build's version, the one the Firmware entity reports (bundle.mjs --version;
 # default the YAML's facet_version). A release also sets facet_version in the YAML.
@@ -31,3 +32,12 @@ node "$ROOT/firmware/settings_yaml.mjs" "$HERE/gen/settings.yaml"
 if [ "$speaker" = true ]; then node "$ROOT/firmware/sound_bank.mjs" --check || node "$ROOT/firmware/sound_bank.mjs"; fi
 [ "$step" = prepare ] && exit 0
 ${ESPHOME:-esphome} "$step" "$yaml"
+# the editor files after the app image, in every image this build made (firmware/web_append.mjs; in rodata they were
+# copied to PSRAM at boot on the Guition, #185). The images are where the YAML's build_path puts them.
+if [ "$step" = compile ] && [ "${FW_WEB:-1}" != 0 ]; then
+  suffix=$(sed -n 's/^ *build_suffix: *"\([^"]*\)".*/\1/p' "$yaml"); name=$(sed -n 's/^ *name: *\([a-z0-9-]*\).*/\1/p' "$yaml" | head -1)
+  B="${ESPHOME_BUILD_ROOT:-$HERE/build}/$name$suffix/build"
+  imgs=(); for f in "$B/firmware.ota.bin" "$B/firmware.factory.bin" "$B/firmware.bin" "$B/$name.bin"; do [ -f "$f" ] && imgs+=("$f"); done
+  [ ${#imgs[@]} -gt 0 ] || { echo "no images in $B to append the editor files to"; exit 1; }
+  node "$ROOT/firmware/web_append.mjs" "$HERE/gen/$id/facet_wb/fw_web.bin" "${imgs[@]}"
+fi
