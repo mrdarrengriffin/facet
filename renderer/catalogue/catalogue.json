@@ -3904,9 +3904,11 @@
      "bindable": true,
      "options": [
       "title",
-      "body"
+      "body",
+      "headline",
+      "value"
      ],
-     "about": "title is the usual value; body is a smaller value, for a row of facts in a narrow column (the Flight radar's hero, docs .fs-stat)."
+     "about": "title is the usual value; body is a smaller value, for a row of facts in a narrow column (the Flight radar's hero, docs .fs-stat); headline and value are the big number of a Stat card on Home (half: headline, bigger: value)."
     },
     {
      "name": "align",
@@ -5408,6 +5410,7 @@
   "both"
  ],
  "grid_sizes": "1x1,2x1,2x2,half",
+ "grid_extra": "2xhalf,3xhalf,3x1",
  "cards": {
   "light": {
    "domains": "light,switch",
@@ -5459,6 +5462,28 @@
     "s": "entity_tile",
     "m": "card",
     "l": "card"
+   }
+  },
+  "stat": {
+   "domains": "sensor,binary_sensor,number,input_number",
+   "sizes": "",
+   "taps": "none",
+   "detail": "",
+   "grid": "half,1x1,2xhalf",
+   "component": {
+    "s": "stat",
+    "m": "stat"
+   }
+  },
+  "header": {
+   "domains": "",
+   "sizes": "",
+   "taps": "none",
+   "detail": "",
+   "grid": "3xhalf",
+   "component": {
+    "s": "section_header",
+    "m": "section_header"
    }
   },
   "entity": {
@@ -5528,5 +5553,5 @@
    }
   }
  },
- "hash": "78f3ae74"
+ "hash": "a46f796b"
 }
