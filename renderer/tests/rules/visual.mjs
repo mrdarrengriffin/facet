@@ -167,7 +167,10 @@ export default {
       if (kind === 'error') { n.error++; bad = true; rep.check(false, `✗ ${c.id} · ${v.label} · ${th}: ${msg}`); }
       else { n.review++; rep.note(`? ${c.id} · ${v.label} · ${th}: ${msg}`); }
     };
-    if (k.n < 16 || k.share < 0.0005) add('error', `blank: ${(k.share * 100).toFixed(2)} % ink in its ${bx.w}x${bx.h} box`);
+    // a variant that is empty on purpose says why (meta / variant "audit": {"skip": {"blank": "<why>"}}, as the audit rule)
+    const skipBlank = (v.audit && v.audit.skip && v.audit.skip.blank) || (c.meta.audit && c.meta.audit.skip && c.meta.audit.skip.blank);
+    if ((k.n < 16 || k.share < 0.0005) && skipBlank) rep.note(`${c.id} · ${v.label} · ${th}: blank on purpose: ${skipBlank}`);
+    else if (k.n < 16 || k.share < 0.0005) add('error', `blank: ${(k.share * 100).toFixed(2)} % ink in its ${bx.w}x${bx.h} box`);
     else if (k.share < 0.02 || k.box < 0.1) add('review', `little ink: ${(k.share * 100).toFixed(1)} % of its ${bx.w}x${bx.h} box, the ink's own box ${(k.box * 100).toFixed(0)} % of it`);
     if (k.n && k.one > 0.97 && k.n > 64) add('review', `one colour: ${(k.one * 100).toFixed(0)} % of the ink is one colour`);
     if (r.overflows > 0) add('review', `dirty areas: ${r.overflows} refresh${r.overflows > 1 ? 'es' : ''} over LVGL's 32 areas in 3 s (each one a full-screen redraw on the panel)`);

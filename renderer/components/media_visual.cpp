@@ -617,8 +617,8 @@ FW_COMPONENT(media_visual, "Media visuals", "components", R"({
     {"label": "CD · card", "props": {"visual": "cd", "size": "card"}},
     {"label": "CD", "props": {"visual": "cd", "progress": 45}},
     {"label": "CD · spin off", "props": {"visual": "cd", "progress": 45, "spin": false}},
-    {"label": "Art · no art yet", "props": {"visual": "art"}},
-    {"label": "Art · card", "props": {"visual": "art", "size": "card"}},
+    {"label": "Art · no art yet", "props": {"visual": "art"}, "audit": {"skip": {"blank": "art draws nothing until its picture comes, and the preview has none"}}},
+    {"label": "Art · card", "props": {"visual": "art", "size": "card"}, "audit": {"skip": {"blank": "art draws nothing until its picture comes, and the preview has none"}}},
     {"label": "Vinyl", "props": {"visual": "vinyl", "progress": 60}, "audit": {"skip": {"clip": "vinyl awaiting design round"}}},
     {"label": "Vinyl · stopped at the start", "props": {"visual": "vinyl", "progress": 0, "playing": false}, "audit": {"skip": {"clip": "vinyl awaiting design round"}}}
   ]
