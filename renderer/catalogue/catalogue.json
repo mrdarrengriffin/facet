@@ -3949,6 +3949,12 @@
      "about": "Where the label and the value sit in the stat's width: start (the left, for a column of facts) or centre (under a centred hero, such as the Energy screen's price now and next)."
     },
     {
+     "name": "divider",
+     "type": "bool",
+     "bindable": true,
+     "about": "A hairline at its start, to part it from the stat before it (a Stat row on Home)."
+    },
+    {
      "name": "state",
      "type": "select",
      "bindable": true,
@@ -5616,5 +5622,5 @@
    }
   }
  },
- "hash": "5aac9170"
+ "hash": "8dbbeb85"
 }

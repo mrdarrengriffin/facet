@@ -231,6 +231,7 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
         bind(cp, "label", id, "name");
         bind(cp, "value", id, "state");
         cp["size"] = "headline", cp["align"] = "start";
+        if (k > 1) cp["divider"] = true;  // a hairline between the stats (S3); k counts from 1 here
       }
     }
     return true;
