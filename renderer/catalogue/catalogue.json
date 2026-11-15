@@ -5353,22 +5353,6 @@
    }
   },
   {
-   "do": "entity.option",
-   "about": "Pick one of a select's options (an input_select or a select, such as a house mode): the option whose name matches the event's choice, any case.",
-   "fields": [
-    {
-     "name": "e",
-     "type": "entity",
-     "need": "required",
-     "limits": "input_select.x or select.x"
-    }
-   ],
-   "example": {
-    "do": "entity.option",
-    "e": "input_select.house_mode"
-   }
-  },
-  {
    "do": "entity.toggle",
    "about": "Toggle a fan, an input boolean or an automation (an automation: enable / disable).",
    "fields": [
@@ -5382,6 +5366,22 @@
    "example": {
     "do": "entity.toggle",
     "e": "fan.bedroom"
+   }
+  },
+  {
+   "do": "entity.option",
+   "about": "Pick one of a select's options (an input_select or a select, such as a house mode): the option whose name matches the event's choice, any case.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "input_select.x or select.x"
+    }
+   ],
+   "example": {
+    "do": "entity.option",
+    "e": "input_select.house_mode"
    }
   },
   {
@@ -5584,6 +5584,17 @@
     "m": "segmented"
    }
   },
+  "spark": {
+   "domains": "sensor",
+   "sizes": "",
+   "taps": "none",
+   "detail": "",
+   "grid": "2xhalf,3xhalf",
+   "component": {
+    "s": "grid",
+    "m": "grid"
+   }
+  },
   "entity": {
    "domains": "*",
    "sizes": "s",
@@ -5651,5 +5662,5 @@
    }
   }
  },
- "hash": "fab84adc"
+ "hash": "6ae2c4ef"
 }

@@ -36,6 +36,7 @@
 #include "fw.h"
 #include "fx.h"
 #include "spec.h"
+#include "history.h"
 #include "device.h"
 
 namespace {
@@ -234,6 +235,25 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
         if (k > 1) cp["divider"] = true;  // a hairline between the stats (S3); k counts from 1 here
       }
     }
+    return true;
+  }
+  if (t == "spark") {  // a Sparkline card (#200 K2): a Grid of the value (a Stat) and its last 24 hours (a Sparkline)
+    fw::dev::history::track(e);  // panel.history reads it with the others (core/history.cpp)
+    p["aspect"] = "row", p["gap"] = "group", p["cols"] = 2;
+    const int in = (int) nodes.size() - 1;
+    ArduinoJson::JsonObject st = nodes.add<ArduinoJson::JsonObject>();
+    st["c"] = "stat", st["in"] = in, st["slot"] = 0;
+    ArduinoJson::JsonObject sp_ = st["p"].to<ArduinoJson::JsonObject>();
+    if (label.empty()) bind(sp_, "label", e, "name"); else sp_["label"] = label;
+    bind(sp_, "value", e, "state");
+    sp_["size"] = "headline", sp_["align"] = "start";
+    ArduinoJson::JsonObject ln = nodes.add<ArduinoJson::JsonObject>();
+    ln["c"] = "sparkline", ln["in"] = in, ln["slot"] = 1;
+    ArduinoJson::JsonObject lp = ln["p"].to<ArduinoJson::JsonObject>();
+    ArduinoJson::JsonObject vb = lp["values"].to<ArduinoJson::JsonObject>();
+    vb["e"] = "panel.history", vb["a"] = e;
+    lp["colour"] = "accent", lp["dot"] = true;
+    lp["width"] = size == "3xhalf" ? 200 : 120;  // inside its half of the cell, the end dot too
     return true;
   }
   const std::string dom = e.substr(0, e.find('.'));

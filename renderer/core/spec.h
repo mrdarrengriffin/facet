@@ -258,8 +258,8 @@ constexpr ActionDoc ACTION_DOCS[] = {
     {"scene.activate", "Activate a Home Assistant scene.", "e|entity|required|scene.x", "", R"({"do":"scene.activate","e":"scene.movie"})", false},
     {"automation.trigger", "Trigger a Home Assistant automation now.", "e|entity|required|automation.x", "", R"({"do":"automation.trigger","e":"automation.lights_out"})", false},
     {"button.press", "Press a Home Assistant button entity.", "e|entity|required|button.x", "", R"({"do":"button.press","e":"button.doorbell_chime"})", false},
-    {"entity.option", "Pick one of a select's options (an input_select or a select, such as a house mode): the option whose name matches the event's choice, any case.", "e|entity|required|input_select.x or select.x", "", R"({"do":"entity.option","e":"input_select.house_mode"})", false},
     {"entity.toggle", "Toggle a fan, an input boolean or an automation (an automation: enable / disable).", "e|entity|required|fan.x, input_boolean.x or automation.x", "", R"({"do":"entity.toggle","e":"fan.bedroom"})", false},
+    {"entity.option", "Pick one of a select's options (an input_select or a select, such as a house mode): the option whose name matches the event's choice, any case.", "e|entity|required|input_select.x or select.x", "", R"({"do":"entity.option","e":"input_select.house_mode"})", false},
     {"ha.connect", "Set the panel's own Home Assistant link: its address and a long-lived token (kept on the panel, never shown back).", "url|text|required|http(s)://host:port, at most 128;token|text|optional|a long-lived access token (empty = keep the one set)", "", R"({"do":"ha.connect","url":"http://homeassistant.local:8123","token":"eyJhbGciOiJIUzI1NiJ9.example.token"})", false},
     {"ha.entities", "Read the entity lists the pickers offer from Home Assistant (the panel's own link).", "domains|text|optional|a comma list of domains (light, sensor, ...), empty = every domain", "", R"({"do":"ha.entities","domains":"light,media_player"})", false},
 };
@@ -405,7 +405,8 @@ constexpr CardType CARD_TYPES[] = {
     {"slider", "light", "", "none", "", "slider_row", "slider_row", ""},
     {"chips", "light,switch,input_boolean,fan,scene,script", "", "none", "", "grid", "grid", ""},  // a row of pills, one per entity, each toggles / runs it (#200): es
     {"stats", "sensor,binary_sensor,number,input_number", "", "none", "", "grid", "grid", ""},
-    {"mode", "input_select,select", "", "none", "", "segmented", "segmented", ""},  // a house mode as a Segmented, its choices from the entity (#200 P3)     // up to three Stats side by side (#200): es  // a slim brightness strip, no tile chrome (#200): its meta sizes  // a title row that groups a long Home (#200): no entity
+    {"mode", "input_select,select", "", "none", "", "segmented", "segmented", ""},
+    {"spark", "sensor", "", "none", "", "grid", "grid", ""},  // a sensor's value and its last 24 hours as a line (#200 K2): a Grid of a Stat + a Sparkline  // a house mode as a Segmented, its choices from the entity (#200 P3)     // up to three Stats side by side (#200): es  // a slim brightness strip, no tile chrome (#200): its meta sizes  // a title row that groups a long Home (#200): no entity
     {"entity", "*", "s", "toggle,detail,run,none", "", "entity_tile", "", ""}};  // any entity, like HA's tile card (taps by domain: ENTITY_TAPS)
 // the Entity tile (after Home Assistant's tile card): any entity; what a tap can do depends on its
 // domain (the default first, like HA's): toggle, detail = the domain's own screen (only when this build has it), run =
@@ -871,12 +872,13 @@ inline const CardType *card_type(const std::string &t) {
 // the cards that hold several entities ("es", #200): a nested Grid; their Home sizes are their own (a Grid lists none)
 constexpr int CARD_ES_MAX = 6;
 inline bool card_many(const std::string &t) { return t == "chips" || t == "stats"; }
-inline const char *card_many_sizes(const std::string &t) { return t == "chips" ? "3xhalf,2xhalf" : t == "stats" ? "3x1,3xhalf" : ""; }
+inline const char *card_many_sizes(const std::string &t) { return t == "chips" ? "3xhalf,2xhalf" : t == "stats" ? "3x1,3xhalf" : t == "spark" ? "2xhalf,3xhalf" : ""; }
 inline std::string card_grid_size(const std::string &t, const std::string &size) {
   if (t == "header" && (size.empty() || size == "m")) return "3xhalf";
   if (t == "slider" && (size.empty() || size == "m")) return "2xhalf";
   if (t == "chips" && (size.empty() || size == "m")) return "3xhalf";
   if (t == "mode" && (size.empty() || size == "m")) return "3xhalf";
+  if (t == "spark" && (size.empty() || size == "m")) return "2xhalf";
   if (t == "stats" && (size.empty() || size == "m")) return "3x1";
   if (size == "s") return "1x1";
   if (size == "m" || size.empty()) return t == "sensor" || t == "readout" || t == "stat" ? "half" : "2x1";
@@ -889,7 +891,7 @@ inline const char *card_comp(const std::string &t, const std::string &gsize) {
   if (t == "header") return "section_header";
   if (t == "slider") return "slider_row";
   if (t == "mode") return "segmented";
-  if (card_many(t)) return "grid";
+  if (card_many(t) || t == "spark") return "grid";
   return gsize == "1x1" || gsize == "half" ? "entity_tile" : "card";
 }
 inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, const std::set<std::string> &ids, Errs &e) {
@@ -898,7 +900,7 @@ inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, co
   check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 7, p, e);
   const std::string t = c["t"] | "", ent = c["e"] | "", size = c["size"] | "", tap = c["tap"] | "", pg = c["page"] | "";
   const CardType *ct = card_type(t);
-  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, media, sensor, readout, stat, header, slider, chips, stats, mode, page, entity)"); return; }
+  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, media, sensor, readout, stat, header, slider, chips, stats, mode, spark, page, entity)"); return; }
   if (!c["es"].isNull() && !card_many(t)) err(e, p + ".es", "bad_card", std::string("a ") + t + " card has one entity (e), not es");
   if (card_many(t)) {  // several entities, each of the type's domains; no e
     ArduinoJson::JsonArrayConst es = c["es"].as<ArduinoJson::JsonArrayConst>();
@@ -934,7 +936,7 @@ inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, co
     if (dot == std::string::npos || !csv_has(ct->domains, ent.substr(0, dot))) err(e, p + ".e", "bad_entity", std::string("a ") + t + " card takes " + ct->domains + " entities");
   } else if (!ent.empty()) err(e, p + ".e", "bad_card", std::string("a ") + t + " card has no entity");
   if (t == "header" && (c["label"] | "")[0] == 0) err(e, p + ".label", "bad_card", "a header card has a label (its title)");
-  const std::string gs = card_grid_size(t, size), cs = comp_sizes(card_comp(t, gs));
+  const std::string gs = card_grid_size(t, size), cs = *card_many_sizes(t) ? std::string(card_many_sizes(t)) : comp_sizes(card_comp(t, gs));
   if (csv_has(GRID_EXTRA, gs) && !csv_has(cs.c_str(), gs))  // a slim / wide size: only where the component lists it
     err(e, p + ".size", "bad_size", std::string("a ") + t + " card's size is " + (cs.empty() ? GRID_SIZES : cs));
   else if (!csv_has(GRID_SIZES, size) && !csv_has(ct->sizes, size) && !csv_has(GRID_EXTRA, gs))
@@ -2551,6 +2553,7 @@ inline void catalogue(ArduinoJson::JsonObject out) {
   ArduinoJson::JsonObject ct = out["cards"].to<ArduinoJson::JsonObject>();
   for (const CardType &c : CARD_TYPES) { auto o = ct[c.t].to<ArduinoJson::JsonObject>(); o["domains"] = c.domains; o["sizes"] = c.sizes; o["taps"] = c.taps; o["detail"] = c.detail;
     if (card_many(c.t)) o["grid"] = card_many_sizes(c.t), o["many"] = !strcmp(c.t, "stats") ? 3 : CARD_ES_MAX;  // several entities (es)
+    else if (!strcmp(c.t, "spark")) o["grid"] = card_many_sizes(c.t);
     else if (!strcmp(c.t, "readout") || !strcmp(c.t, "stat") || !strcmp(c.t, "header") || !strcmp(c.t, "slider") || !strcmp(c.t, "mode"))  // the Home sizes the editor offers it at
       o["grid"] = comp_sizes(card_comp(c.t, ""));                                       // (its component's meta)
     auto cm = o["component"].to<ArduinoJson::JsonObject>(); if (*c.comp_s) cm["s"] = c.comp_s; if (*c.comp_m) cm["m"] = c.comp_m; if (*c.comp_l) cm["l"] = c.comp_l; }

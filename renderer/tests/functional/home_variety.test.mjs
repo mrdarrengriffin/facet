@@ -68,6 +68,23 @@ export default {
       t.ok(t.ha.calls.some((c) => c.service === 'input_select.select_option' && c.entity === 'input_select.test_mode' && (c.data?.option ?? '') === 'Night'),
         `a tap picks Night: ${JSON.stringify(t.ha.calls).slice(0, 200)}`);
     } },
+    { name: 'a Sparkline: the value and its last 24 hours from Home Assistant\'s statistics (panel.history)', async run(t) {
+      t.ha.s['sensor.test_temp'] = { '': '21.4', friendly_name: 'Inside', unit_of_measurement: '°C', state_class: 'measurement' };
+      const means = [19.8, 20.1, 20.6, 21.0, 21.4, 21.2, 20.9, 21.4];
+      let asked = null;
+      t.ha.wsx = (cmd) => cmd.type !== 'recorder/statistics_during_period' ? null
+        : (asked = cmd, { id: 1, type: 'result', success: true, result: { 'sensor.test_temp': means.map((m, i) => ({ start: i * 3600000, end: (i + 1) * 3600000, mean: m })) } });
+      t.ha.answers = true;
+      try {
+        await t.device(deck([{ t: 'spark', e: 'sensor.test_temp' }]));
+        t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
+        for (let i = 0; i < 3; i++) { t.wait(61000); t.b.tick(8); t.ha.push(); t.b.settle(400); }
+        t.has(t.texts(), /^inside$/i, 'its name'); t.has(t.texts(), /21\.4/, 'its value');
+        t.ok(asked && asked.statistic_ids?.includes('sensor.test_temp') && asked.period === 'hour', `read its hourly means: ${JSON.stringify(asked)?.slice(0, 160)}`);
+        const v = t.b.m.UTF8ToString(t.b.m._fw_ha_get?.(t.b.m.stringToNewUTF8('panel.history'), t.b.m.stringToNewUTF8('sensor.test_temp')) ?? 0);
+        t.ok(!t.b.m._fw_ha_get || v.split(',').length === means.length, `panel.history holds the means: ${v}`);
+      } finally { t.ha.wsx = null; }
+    } },
     { name: 'the slim and wide sizes only where the component lists them; a Header has a label and no entity', async run(t) {
       await t.device(DECK);
       let rev = 20;
@@ -90,6 +107,7 @@ export default {
       t.eq(s.cards?.chips?.grid, '3xhalf,2xhalf', 'Chip row: the full row or two wide');
       t.eq(s.cards?.stats?.grid, '3x1,3xhalf', 'Stat row: full width');
       t.eq(s.cards?.mode?.grid, '3xhalf,2xhalf', 'Mode switch: the full row or two wide');
+      t.eq(s.cards?.spark?.grid, '2xhalf,3xhalf', 'Sparkline: two wide or the full row');
       t.eq(s.cards?.slider?.grid, '2xhalf,3xhalf', 'Slider strip: two wide or the full row');
       t.eq(s.grid_sizes, '1x1,2x1,2x2,half', 'every type keeps the usual four');
     } },

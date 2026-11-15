@@ -131,7 +131,7 @@ const span = (size: string): [number, number] => {
   const s = size === 's' ? '1x1' : size === 'm' ? '2x1' : size === 'l' ? '2x2' : size;
   return [s[0] === '2' ? 2 : 1, s === 'half' ? 1 : s === '1x2' || s === '2x2' ? 4 : 2];
 };
-const gsize = (c: Card) => (c.t === 'header' && (!c.size || c.size === 'm') ? '3xhalf' : c.t === 'slider' && (!c.size || c.size === 'm') ? '2xhalf' : c.t === 'chips' && (!c.size || c.size === 'm') ? '3xhalf' : c.t === 'mode' && (!c.size || c.size === 'm') ? '3xhalf' : c.t === 'stats' && (!c.size || c.size === 'm') ? '3x1' : c.size === 's' ? '1x1' : c.size === 'm' ? (c.t === 'sensor' || c.t === 'readout' || c.t === 'stat' ? 'half' : '2x1') : c.size === 'l' ? '2x2' : c.size);
+const gsize = (c: Card) => (c.t === 'header' && (!c.size || c.size === 'm') ? '3xhalf' : c.t === 'slider' && (!c.size || c.size === 'm') ? '2xhalf' : c.t === 'chips' && (!c.size || c.size === 'm') ? '3xhalf' : c.t === 'mode' && (!c.size || c.size === 'm') ? '3xhalf' : c.t === 'spark' && (!c.size || c.size === 'm') ? '2xhalf' : c.t === 'stats' && (!c.size || c.size === 'm') ? '3x1' : c.size === 's' ? '1x1' : c.size === 'm' ? (c.t === 'sensor' || c.t === 'readout' || c.t === 'stat' ? 'half' : '2x1') : c.size === 'l' ? '2x2' : c.size);
 /** the Home sizes a card type takes: its component's (meta sizes: the State readout is half only), else every one */
 const sizesOf = (t: string) => (boot.cards[t]?.grid || boot.grid_sizes).split(',');
 /** where each card goes (null = left out: a page card whose page is not in the deck), and the taken half rows */
@@ -179,7 +179,7 @@ function insertAt(p: Page, card: Card, x: number, y: number): number {
   }
   return best;
 }
-const TYPE_NAME: Record<string, string> = { light: 'Light', media: 'Media', sensor: 'Sensor', readout: 'State readout', stat: 'Stat', header: 'Header', slider: 'Slider strip', chips: 'Chip row', stats: 'Stat row', mode: 'Mode switch', page: 'Screen', entity: 'Entity' };
+const TYPE_NAME: Record<string, string> = { light: 'Light', media: 'Media', sensor: 'Sensor', readout: 'State readout', stat: 'Stat', header: 'Header', slider: 'Slider strip', chips: 'Chip row', stats: 'Stat row', mode: 'Mode switch', spark: 'Sparkline', page: 'Screen', entity: 'Entity' };
 const SIZE_NAME: Record<string, string> = { '1x1': '1 × 1', '2x1': '2 × 1', '2x2': '2 × 2', '1x2': '1 × 2', half: 'Half', '2xhalf': '2 × half', '3xhalf': 'Full row', '3x1': '3 × 1' };
 const TAP_NAME: Record<string, string> = { toggle: 'Toggle', detail: 'Its screen', page: 'A screen', run: 'Run', none: 'Nothing' };
 function entName(id: string | undefined) {
@@ -754,6 +754,7 @@ function kinds(size: string): Kind[] {
   if (sl) ks.splice(ks.length - 1, 0, { id: 'slider', label: 'Slider strip', doms: sl.domains.split(',') });
   // a Chip row / Stat row (#200): pick the first entity here, add the others in the card's settings
   if (boot.cards.mode) ks.splice(ks.length - 1, 0, { id: 'mode', label: 'Mode switch', doms: boot.cards.mode.domains.split(',') });
+  if (boot.cards.spark) ks.splice(ks.length - 1, 0, { id: 'spark', label: 'Sparkline', doms: boot.cards.spark.domains.split(','), classes: SENSOR_CLASSES });
   for (const [id, label] of [['chips', 'Chip row'], ['stats', 'Stat row']] as const)
     if (boot.cards[id]) ks.splice(ks.length - 1, 0, { id, label, doms: boot.cards[id].domains.split(','), ...(id === 'stats' ? { classes: SENSOR_CLASSES } : {}) });
   return ks;
@@ -761,7 +762,7 @@ function kinds(size: string): Kind[] {
 /** the card an entity makes: its domain's card type (Light, Media, Sensor), else an Entity card */
 function cardFor(id: string, size: string): Card {
   const dom = id.split('.')[0];
-  const t = Object.entries(boot.cards).find(([ty, def]) => ty !== 'entity' && ty !== 'page' && ty !== 'readout' && ty !== 'stat' && ty !== 'header' && ty !== 'slider' && ty !== 'chips' && ty !== 'stats' && ty !== 'mode' && sizesOf(ty).includes(size) && def.domains.split(',').includes(dom))?.[0] ?? 'entity';
+  const t = Object.entries(boot.cards).find(([ty, def]) => ty !== 'entity' && ty !== 'page' && ty !== 'readout' && ty !== 'stat' && ty !== 'header' && ty !== 'slider' && ty !== 'chips' && ty !== 'stats' && ty !== 'mode' && ty !== 'spark' && sizesOf(ty).includes(size) && def.domains.split(',').includes(dom))?.[0] ?? 'entity';
   return { t, e: id, size };
 }
 /** the search index (a panel: read once from its Home Assistant, a few seconds in a large house, then searched here as
@@ -942,7 +943,7 @@ function addCardSide(p: Page): HTMLElement[] {
     return out;
   }
   if (k) {
-    out.push(...searchBox(k.doms, cls?.[0] ?? '', cls ? cls[1] : k.label, (id) => put(k.id === 'chips' || k.id === 'stats' ? { t: k.id, es: [id], size: sizesOf(k.id)[0] } : k.id === 'mode' ? { t: 'mode', e: id, size: sizesOf('mode')[0] } : k.id === 'slider' ? { t: 'slider', e: id, size: sizesOf('slider')[0] } : k.id === 'readout' || k.id === 'stat' ? { t: k.id, e: id, size: t.size } : cardFor(id, t.size)), undefined, true, true));
+    out.push(...searchBox(k.doms, cls?.[0] ?? '', cls ? cls[1] : k.label, (id) => put(k.id === 'chips' || k.id === 'stats' ? { t: k.id, es: [id], size: sizesOf(k.id)[0] } : k.id === 'mode' || k.id === 'spark' ? { t: k.id, e: id, size: sizesOf(k.id)[0] } : k.id === 'slider' ? { t: 'slider', e: id, size: sizesOf('slider')[0] } : k.id === 'readout' || k.id === 'stat' ? { t: k.id, e: id, size: t.size } : cardFor(id, t.size)), undefined, true, true));
     return out;
   }
   // the types; typing straight away searches every entity a card can show
@@ -952,7 +953,7 @@ function addCardSide(p: Page): HTMLElement[] {
     box.append(row('Screen', 'A card that opens a screen: one of yours or a built-in one', () => { addKind = 'page'; render(); }));
     if (boot.cards.header)  // a title row across Home (#200): no entity; its title is its label (the card's settings)
       box.append(row('Header', 'A title row across Home that groups the cards under it', () => put({ t: 'header', label: 'Section', size: '3xhalf' }), false));
-    for (const x of ks) box.append(row(x.label, x.id === 'readout' ? 'A state with no box: a door open, a temperature, someone in' : x.id === 'stat' ? 'A big number and its name: energy today, the temperature' : x.id === 'slider' ? 'Brightness as a slim bar, two cells wide' : x.id === 'chips' ? 'A row of pills: switch several things from one place' : x.id === 'stats' ? 'Up to three numbers side by side, across Home' : x.id === 'mode' ? 'A house mode (Home, Away, Night) to switch in one tap' : x.classes ? 'Temperature, humidity, power, doors…' : '', () => { addKind = x.id; addClass = null; render(); }));
+    for (const x of ks) box.append(row(x.label, x.id === 'readout' ? 'A state with no box: a door open, a temperature, someone in' : x.id === 'stat' ? 'A big number and its name: energy today, the temperature' : x.id === 'slider' ? 'Brightness as a slim bar, two cells wide' : x.id === 'chips' ? 'A row of pills: switch several things from one place' : x.id === 'stats' ? 'Up to three numbers side by side, across Home' : x.id === 'mode' ? 'A house mode (Home, Away, Night) to switch in one tap' : x.id === 'spark' ? 'A value and its last 24 hours as a small chart' : x.classes ? 'Temperature, humidity, power, doors…' : '', () => { addKind = x.id; addClass = null; render(); }));
   }));
   return out;
 }
