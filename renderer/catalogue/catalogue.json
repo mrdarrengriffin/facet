@@ -5525,6 +5525,30 @@
     "m": "slider_row"
    }
   },
+  "chips": {
+   "domains": "light,switch,input_boolean,fan,scene,script",
+   "sizes": "",
+   "taps": "none",
+   "detail": "",
+   "grid": "3xhalf,2xhalf",
+   "many": 6,
+   "component": {
+    "s": "grid",
+    "m": "grid"
+   }
+  },
+  "stats": {
+   "domains": "sensor,binary_sensor,number,input_number",
+   "sizes": "",
+   "taps": "none",
+   "detail": "",
+   "grid": "3x1,3xhalf",
+   "many": 3,
+   "component": {
+    "s": "grid",
+    "m": "grid"
+   }
+  },
   "entity": {
    "domains": "*",
    "sizes": "s",
@@ -5592,5 +5616,5 @@
    }
   }
  },
- "hash": "67ce1747"
+ "hash": "5aac9170"
 }

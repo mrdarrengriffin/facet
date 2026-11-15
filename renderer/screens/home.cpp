@@ -208,6 +208,33 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     sp.add(size == "half" || size == "2xhalf" || size == "3xhalf" ? 1 : size == "1x2" || size == "2x2" ? 4 : 2);
   }
   ArduinoJson::JsonObject p = n["p"].to<ArduinoJson::JsonObject>();
+  if (fw::spec::card_many(t)) {  // several entities (#200): a Grid in the cell, one child per entity
+    ArduinoJson::JsonArrayConst es = cd["es"].as<ArduinoJson::JsonArrayConst>();
+    const bool chips = t == "chips";
+    p["aspect"] = chips ? "hug" : "row", p["gap"] = chips ? "near" : "group", p["cols"] = chips ? (int) es.size() : (int) std::max<size_t>(1, es.size());
+    const int in = (int) nodes.size() - 1;
+    int k = 0;
+    for (ArduinoJson::JsonVariantConst x : es) {
+      const std::string id = x | "", d = id.substr(0, id.find('.'));
+      ArduinoJson::JsonObject c = nodes.add<ArduinoJson::JsonObject>();
+      c["in"] = in, c["slot"] = k++;
+      ArduinoJson::JsonObject cp = c["p"].to<ArduinoJson::JsonObject>();
+      if (chips) {  // a pill: the name, filled while on; a tap toggles it (a scene / script: runs it)
+        c["c"] = "button";
+        bind(cp, "label", id, "name");
+        cp["size"] = "small";
+        if (d == "scene" || d == "script") cp["kind"] = "secondary";
+        else { ArduinoJson::JsonObject kd = cp["kind"].to<ArduinoJson::JsonObject>(); kd["e"] = id, kd["map"]["on"] = "primary", kd["else"] = "secondary"; }
+        set_tap(c, d == "scene" || d == "script" ? "run" : "toggle", id, "", "", "");
+      } else {  // a Stat: the state as the value, the name as the label
+        c["c"] = "stat";
+        bind(cp, "label", id, "name");
+        bind(cp, "value", id, "state");
+        cp["size"] = "headline", cp["align"] = "start";
+      }
+    }
+    return true;
+  }
   const std::string dom = e.substr(0, e.find('.'));
   // the label: the card's, else the entity's friendly name; a page card: the page's name
   std::string pid = cd["page"] | "", kind;

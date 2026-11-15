@@ -401,7 +401,9 @@ constexpr CardType CARD_TYPES[] = {
     {"page", "", "s,m,l", "page", "", "entity_tile", "card", "card"},
     {"stat", "sensor,binary_sensor,number,input_number", "", "none", "", "stat", "stat", ""},  // a big number + its name (#200): its meta sizes
     {"header", "", "", "none", "", "section_header", "section_header", ""},
-    {"slider", "light", "", "none", "", "slider_row", "slider_row", ""},  // a slim brightness strip, no tile chrome (#200): its meta sizes  // a title row that groups a long Home (#200): no entity
+    {"slider", "light", "", "none", "", "slider_row", "slider_row", ""},
+    {"chips", "light,switch,input_boolean,fan,scene,script", "", "none", "", "grid", "grid", ""},  // a row of pills, one per entity, each toggles / runs it (#200): es
+    {"stats", "sensor,binary_sensor,number,input_number", "", "none", "", "grid", "grid", ""},     // up to three Stats side by side (#200): es  // a slim brightness strip, no tile chrome (#200): its meta sizes  // a title row that groups a long Home (#200): no entity
     {"entity", "*", "s", "toggle,detail,run,none", "", "entity_tile", "", ""}};  // any entity, like HA's tile card (taps by domain: ENTITY_TAPS)
 // the Entity tile (after Home Assistant's tile card): any entity; what a tap can do depends on its
 // domain (the default first, like HA's): toggle, detail = the domain's own screen (only when this build has it), run =
@@ -860,9 +862,15 @@ inline const CardType *card_type(const std::string &t) {
 // a card's size on Home's Grid (the old sizes: s = 1x1, m = 2x1 (a sensor's m = half), l = 2x2) and the component
 // that draws it there: a type with its own component (the State readout) always that one, else a square or a half =
 // the Entity tile, bigger = the Card
+// the cards that hold several entities ("es", #200): a nested Grid; their Home sizes are their own (a Grid lists none)
+constexpr int CARD_ES_MAX = 6;
+inline bool card_many(const std::string &t) { return t == "chips" || t == "stats"; }
+inline const char *card_many_sizes(const std::string &t) { return t == "chips" ? "3xhalf,2xhalf" : t == "stats" ? "3x1,3xhalf" : ""; }
 inline std::string card_grid_size(const std::string &t, const std::string &size) {
   if (t == "header" && (size.empty() || size == "m")) return "3xhalf";
   if (t == "slider" && (size.empty() || size == "m")) return "2xhalf";
+  if (t == "chips" && (size.empty() || size == "m")) return "3xhalf";
+  if (t == "stats" && (size.empty() || size == "m")) return "3x1";
   if (size == "s") return "1x1";
   if (size == "m" || size.empty()) return t == "sensor" || t == "readout" || t == "stat" ? "half" : "2x1";
   if (size == "l") return "2x2";
@@ -873,15 +881,38 @@ inline const char *card_comp(const std::string &t, const std::string &gsize) {
   if (t == "stat") return "stat";
   if (t == "header") return "section_header";
   if (t == "slider") return "slider_row";
+  if (card_many(t)) return "grid";
   return gsize == "1x1" || gsize == "half" ? "entity_tile" : "card";
 }
 inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, const std::set<std::string> &ids, Errs &e) {
-  static const char *const CK[] = {"t", "e", "size", "tap", "page", "label"};
-  if (!c.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_card", "a card is {t, e, size, tap?, page?, label?}"); return; }
-  check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 6, p, e);
+  static const char *const CK[] = {"t", "e", "es", "size", "tap", "page", "label"};
+  if (!c.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_card", "a card is {t, e | es, size, tap?, page?, label?}"); return; }
+  check_keys(c.as<ArduinoJson::JsonObjectConst>(), CK, 7, p, e);
   const std::string t = c["t"] | "", ent = c["e"] | "", size = c["size"] | "", tap = c["tap"] | "", pg = c["page"] | "";
   const CardType *ct = card_type(t);
-  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, media, sensor, readout, stat, header, slider, page, entity)"); return; }
+  if (!ct) { err(e, p + ".t", "bad_card", "t is a card type (light, media, sensor, readout, stat, header, slider, chips, stats, page, entity)"); return; }
+  if (!c["es"].isNull() && !card_many(t)) err(e, p + ".es", "bad_card", std::string("a ") + t + " card has one entity (e), not es");
+  if (card_many(t)) {  // several entities, each of the type's domains; no e
+    ArduinoJson::JsonArrayConst es = c["es"].as<ArduinoJson::JsonArrayConst>();
+    const int mx = t == "stats" ? 3 : CARD_ES_MAX;
+    if (!ent.empty()) err(e, p + ".e", "bad_card", std::string("a ") + t + " card lists its entities in es");
+    if (es.isNull() || es.size() < 1 || (int) es.size() > mx) err(e, p + ".es", "bad_card", "es is a list of 1 to " + std::to_string(mx) + " entity ids");
+    else {
+      int k = 0;
+      for (ArduinoJson::JsonVariantConst x : es) {
+        const std::string id = x | "";
+        const size_t dot = id.find('.');
+        if (dot == std::string::npos || !entity_ok(id) || id[0] == '$' || !csv_has(ct->domains, id.substr(0, dot)))
+          err(e, p + ".es[" + std::to_string(k) + "]", "bad_entity", std::string("a ") + t + " card takes " + ct->domains + " entities");
+        k++;
+      }
+    }
+    const std::string gs = card_grid_size(t, size);
+    if (!csv_has(card_many_sizes(t), gs)) err(e, p + ".size", "bad_size", std::string("a ") + t + " card's size is " + card_many_sizes(t));
+    if (!tap.empty()) err(e, p + ".tap", "bad_tap", std::string("a ") + t + " card's entities each do their own");
+    if (!c["label"].isNull() && (!c["label"].is<const char *>() || strlen(c["label"] | "") > 32)) err(e, p + ".label", "bad_card", "label is text (at most 32)");
+    return;
+  }
   if (t == "entity") {  // any entity; its tap from its domain's list
     const size_t dot = ent.find('.');
     if (dot == std::string::npos || !entity_ok(ent) || ent[0] == '$') err(e, p + ".e", "bad_entity", "an entity id (domain.name)");
@@ -2491,7 +2522,8 @@ inline void catalogue(ArduinoJson::JsonObject out) {
   out["grid_extra"] = GRID_EXTRA;
   ArduinoJson::JsonObject ct = out["cards"].to<ArduinoJson::JsonObject>();
   for (const CardType &c : CARD_TYPES) { auto o = ct[c.t].to<ArduinoJson::JsonObject>(); o["domains"] = c.domains; o["sizes"] = c.sizes; o["taps"] = c.taps; o["detail"] = c.detail;
-    if (!strcmp(c.t, "readout") || !strcmp(c.t, "stat") || !strcmp(c.t, "header") || !strcmp(c.t, "slider"))  // the Home sizes the editor offers it at
+    if (card_many(c.t)) o["grid"] = card_many_sizes(c.t), o["many"] = !strcmp(c.t, "stats") ? 3 : CARD_ES_MAX;  // several entities (es)
+    else if (!strcmp(c.t, "readout") || !strcmp(c.t, "stat") || !strcmp(c.t, "header") || !strcmp(c.t, "slider"))  // the Home sizes the editor offers it at
       o["grid"] = comp_sizes(card_comp(c.t, ""));                                       // (its component's meta)
     auto cm = o["component"].to<ArduinoJson::JsonObject>(); if (*c.comp_s) cm["s"] = c.comp_s; if (*c.comp_m) cm["m"] = c.comp_m; if (*c.comp_l) cm["l"] = c.comp_l; }
   {  // the Entity tile's taps per domain (the editor's choices; a detail only where this build has the screen)

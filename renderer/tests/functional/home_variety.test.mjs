@@ -29,6 +29,36 @@ export default {
       if (r) { t.ha.calls = []; t.drag(null, { from: [r.x + r.w * 0.55, r.y + r.h / 2], by: [r.w * 0.3, 0] }); t.b.settle(800); }
       t.ok(t.ha.calls.some((c) => /^light\./.test(c.service) && c.entity === 'light.test_lamp'), `a drag sets the light: ${JSON.stringify(t.ha.calls).slice(0, 200)}`);
     } },
+    { name: 'a Chip row: one pill per entity, filled while on; a tap toggles it, a scene\'s runs it', async run(t) {
+      Object.assign(t.ha.s, { 'light.test_a': { '': 'on', friendly_name: 'Lamp A' }, 'light.test_b': { '': 'off', friendly_name: 'Lamp B' },
+        'scene.test_film': { '': 'scening', friendly_name: 'Film night' } });
+      await t.device(deck([{ t: 'chips', es: ['light.test_a', 'light.test_b', 'scene.test_film'] }]));
+      t.b.settle(800); t.ha.push(); t.b.settle(600);
+      for (const n of [/^lamp a$/i, /^lamp b$/i, /^film night$/i]) t.has(t.texts(), n, `a pill: ${n}`);
+      t.ha.calls = []; t.tap(/^lamp b$/i); t.b.settle(600);
+      t.ok(t.ha.calls.some((c) => /^light\./.test(c.service) && c.entity === 'light.test_b'), `a tap toggles Lamp B: ${JSON.stringify(t.ha.calls).slice(0, 160)}`);
+      t.ha.calls = []; t.tap(/^film night$/i); t.b.settle(600);
+      t.ok(t.ha.calls.some((c) => c.service === 'scene.turn_on' && c.entity === 'scene.test_film'), `a tap runs the scene: ${JSON.stringify(t.ha.calls).slice(0, 160)}`);
+    } },
+    { name: 'a Stat row: up to three values and their names side by side', async run(t) {
+      Object.assign(t.ha.s, { 'sensor.test_a': { '': '21.4', friendly_name: 'Inside' }, 'sensor.test_b': { '': '48', friendly_name: 'Humidity' },
+        'sensor.test_c': { '': '3.1', friendly_name: 'Solar' } });
+      await t.device(deck([{ t: 'stats', es: ['sensor.test_a', 'sensor.test_b', 'sensor.test_c'] }]));
+      t.b.settle(800); t.ha.push(); t.b.settle(600);
+      for (const n of [/^inside$/i, /^humidity$/i, /^solar$/i, /21\.4/, /^48/]) t.has(t.texts(), n, `shows ${n}`);
+    } },
+    { name: 'Chip row and Stat row: es, not e; their own sizes; their domains; at most 6 / 3', async run(t) {
+      await t.device(DECK);
+      let rev = 40;
+      const bad = (c, code, why) => t.ok(refused(send(t, deck([c], rev++)), code), `${why}: refused (${code})`);
+      bad({ t: 'chips', e: 'light.test_a' }, 'bad_card', 'chips with e');
+      bad({ t: 'chips', es: ['light.test_a'], size: '1x1' }, 'bad_size', 'chips at 1x1');
+      bad({ t: 'stats', es: ['sensor.a', 'sensor.b', 'sensor.c', 'sensor.d'] }, 'bad_card', 'four stats');
+      bad({ t: 'chips', es: ['sensor.test_a'] }, 'bad_entity', 'a sensor chip');
+      bad({ t: 'light', e: 'light.test_a', es: ['light.test_b'], size: '1x1' }, 'bad_card', 'es on a light card');
+      const ok = send(t, deck([{ t: 'chips', es: ['light.test_a', 'scene.test_film'] }, { t: 'stats', es: ['sensor.test_a'], size: '3xhalf' }], rev++));
+      t.ok(ok.ok, `taken: ${JSON.stringify(ok.errors ?? '')}`);
+    } },
     { name: 'the slim and wide sizes only where the component lists them; a Header has a label and no entity', async run(t) {
       await t.device(DECK);
       let rev = 20;
@@ -48,6 +78,8 @@ export default {
       const s = JSON.parse(t.b.m.UTF8ToString(t.b.m._fw_catalogue()));
       t.eq(s.cards?.header?.grid, '3xhalf', 'Header: the full-width row');
       t.eq(s.cards?.stat?.grid, 'half,1x1,2xhalf', 'Stat: half, 1x1, 2xhalf');
+      t.eq(s.cards?.chips?.grid, '3xhalf,2xhalf', 'Chip row: the full row or two wide');
+      t.eq(s.cards?.stats?.grid, '3x1,3xhalf', 'Stat row: full width');
       t.eq(s.cards?.slider?.grid, '2xhalf,3xhalf', 'Slider strip: two wide or the full row');
       t.eq(s.grid_sizes, '1x1,2x1,2x2,half', 'every type keeps the usual four');
     } },
