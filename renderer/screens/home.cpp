@@ -36,6 +36,7 @@
 #include "fw.h"
 #include "fx.h"
 #include "spec.h"
+#include "history.h"
 #include "device.h"
 
 namespace {
@@ -231,8 +232,28 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
         bind(cp, "label", id, "name");
         bind(cp, "value", id, "state");
         cp["size"] = "headline", cp["align"] = "start";
+        if (k > 1) cp["divider"] = true;  // a hairline between the stats (S3); k counts from 1 here
       }
     }
+    return true;
+  }
+  if (t == "spark") {  // a Sparkline card (#200 K2): a Grid of the value (a Stat) and its last 24 hours (a Sparkline)
+    fw::dev::history::track(e);  // panel.history reads it with the others (core/history.cpp)
+    p["aspect"] = "row", p["gap"] = "group", p["cols"] = 2;
+    const int in = (int) nodes.size() - 1;
+    ArduinoJson::JsonObject st = nodes.add<ArduinoJson::JsonObject>();
+    st["c"] = "stat", st["in"] = in, st["slot"] = 0;
+    ArduinoJson::JsonObject sp_ = st["p"].to<ArduinoJson::JsonObject>();
+    if (label.empty()) bind(sp_, "label", e, "name"); else sp_["label"] = label;
+    bind(sp_, "value", e, "state");
+    sp_["size"] = "headline", sp_["align"] = "start";
+    ArduinoJson::JsonObject ln = nodes.add<ArduinoJson::JsonObject>();
+    ln["c"] = "sparkline", ln["in"] = in, ln["slot"] = 1;
+    ArduinoJson::JsonObject lp = ln["p"].to<ArduinoJson::JsonObject>();
+    ArduinoJson::JsonObject vb = lp["values"].to<ArduinoJson::JsonObject>();
+    vb["e"] = "panel.history", vb["a"] = e;
+    lp["colour"] = "accent", lp["dot"] = true;
+    lp["width"] = size == "3xhalf" ? 200 : 120;  // inside its half of the cell, the end dot too
     return true;
   }
   const std::string dom = e.substr(0, e.find('.'));
@@ -242,7 +263,7 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   for (Var pg : pages.as<ArduinoJson::JsonArrayConst>())
     if (pid == (pg["id"] | "")) target = pg;
   if (t == "page") { p["label"] = label.empty() ? page_name(target) : label; kind = target["kind"] | ""; }
-  else if (t == "header") {}  // its label is its title (below)
+  else if (t == "header" || t == "mode") {}  // a header's label is its title (below); a mode card shows its choices only
   else if (label.empty()) bind(p, "label", e, "name");
   else p["label"] = label;
   const std::string comp_s = comp;
@@ -264,6 +285,13 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     tx["e"] = e, tx["a"] = "brightness", tx["fmt"] = "pct";  // the number (slider_row shows it)
     ArduinoJson::JsonObject on = n["on"].to<ArduinoJson::JsonObject>();
     for (const char *ev : {"change", "input"}) { on[ev]["do"] = "light.brightness"; on[ev]["e"] = e; }
+  } else if (comp_s == "segmented") {  // a mode card (#200 P3): the select's options, the chosen one = its state; a tap picks
+    ArduinoJson::JsonObject o = p["options"].to<ArduinoJson::JsonObject>();
+    o["e"] = e, o["a"] = "options";
+    bind(p, "selected", e, "state");
+    p["width"] = "fill";
+    ArduinoJson::JsonObject on = n["on"]["change"].to<ArduinoJson::JsonObject>();
+    on["do"] = "entity.option", on["e"] = e;
   } else if (comp_s == "stat") {  // a Stat card (#200): the entity's state as the big value, its name as the label
     bind(p, "value", e, "state");
     p["align"] = "start";

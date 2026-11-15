@@ -3497,7 +3497,7 @@
      "name": "options",
      "type": "text",
      "bindable": true,
-     "about": "The choices, separated by commas, up to three."
+     "about": "The choices, separated by commas (or a JSON list, such as a select entity's options), up to three."
     },
     {
      "name": "selected",
@@ -3530,7 +3530,8 @@
    "events": {
     "change": [
      "vacuum.control",
-     "screen.param"
+     "screen.param",
+     "entity.option"
     ],
     "open": [
      "nav.open"
@@ -3947,6 +3948,12 @@
       "centre"
      ],
      "about": "Where the label and the value sit in the stat's width: start (the left, for a column of facts) or centre (under a centred hero, such as the Energy screen's price now and next)."
+    },
+    {
+     "name": "divider",
+     "type": "bool",
+     "bindable": true,
+     "about": "A hairline at its start, to part it from the stat before it (a Stat row on Home)."
     },
     {
      "name": "state",
@@ -4791,6 +4798,7 @@
   "automation.trigger",
   "button.press",
   "entity.toggle",
+  "entity.option",
   "ha.connect",
   "ha.entities"
  ],
@@ -5361,6 +5369,22 @@
    }
   },
   {
+   "do": "entity.option",
+   "about": "Pick one of a select's options (an input_select or a select, such as a house mode): the option whose name matches the event's choice, any case.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "input_select.x or select.x"
+    }
+   ],
+   "example": {
+    "do": "entity.option",
+    "e": "input_select.house_mode"
+   }
+  },
+  {
    "do": "ha.connect",
    "about": "Set the panel's own Home Assistant link: its address and a long-lived token (kept on the panel, never shown back).",
    "fields": [
@@ -5549,6 +5573,28 @@
     "m": "grid"
    }
   },
+  "mode": {
+   "domains": "input_select,select",
+   "sizes": "",
+   "taps": "none",
+   "detail": "",
+   "grid": "3xhalf,2xhalf",
+   "component": {
+    "s": "segmented",
+    "m": "segmented"
+   }
+  },
+  "spark": {
+   "domains": "sensor",
+   "sizes": "",
+   "taps": "none",
+   "detail": "",
+   "grid": "2xhalf,3xhalf",
+   "component": {
+    "s": "grid",
+    "m": "grid"
+   }
+  },
   "entity": {
    "domains": "*",
    "sizes": "s",
@@ -5616,5 +5662,5 @@
    }
   }
  },
- "hash": "5aac9170"
+ "hash": "6ae2c4ef"
 }

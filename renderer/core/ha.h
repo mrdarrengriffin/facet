@@ -581,10 +581,10 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
       return "vacuum.send_command: app_segment_clean with segments only";
     for (ArduinoJson::JsonVariantConst x : data["params"][0]["segments"].as<ArduinoJson::JsonArrayConst>())
       if (!x.is<int>() || x.as<int>() < 0 || x.as<int>() > 999) return "segments are room numbers";
-  } else if (svc == "select.select_option") {  // a Vacuum mode pick (cleaning mode, water): one option name
-    if (ent.rfind("select.", 0) != 0) return "not a select";
+  } else if (svc == "select.select_option" || svc == "input_select.select_option") {  // a Vacuum mode pick; a Home mode card (#200)
+    if (ent.rfind(svc.substr(0, svc.find('.')) + ".", 0) != 0) return "not a select of that domain";
     const std::string o = data["option"] | "";
-    if (!only("option") || o.empty() || o.size() > 32) return "select.select_option takes option (a short name)";
+    if (!only("option") || o.empty() || o.size() > 32) return "select_option takes option (a short name)";
     for (char c : o) if (!(isalnum((unsigned char) c) || c == '_' || c == ' ' || c == '-' || c == '+')) return "option: letters, digits, space, _, - or +";
   } else if (svc == "cover.open_cover" || svc == "cover.close_cover" || svc == "cover.stop_cover" ||
              svc == "lock.lock" || svc == "lock.unlock" || svc == "lock.open" || svc == "vacuum.start" ||

@@ -97,6 +97,11 @@ void fill(lv_obj_t *box, fw::Props p) {
   {
     const std::string all = p["options"] | "Auto, Dark, Light";
     size_t a = 0;
+    ArduinoJson::JsonDocument jd;  // or a JSON list: a select entity's own options attribute (a Home mode card, #200)
+    if (!all.empty() && all[0] == '[' && !deserializeJson(jd, all) && jd.is<ArduinoJson::JsonArray>()) {
+      for (ArduinoJson::JsonVariantConst o : jd.as<ArduinoJson::JsonArrayConst>()) if (!trim(o | "").empty()) labels.push_back(trim(o | ""));
+      a = all.size() + 1;
+    }
     while (a <= all.size()) {
       size_t b = all.find(',', a);
       if (b == std::string::npos) b = all.size();
@@ -171,12 +176,13 @@ void fill(lv_obj_t *box, fw::Props p) {
 
 FW_COMPONENT(segmented, "Segmented", "components", R"({
   "about": "One choice out of a few, side by side: a setting with up to 3 options, or the view tabs of a screen.",
+  "sizes": ["3xhalf", "2xhalf"],
   "contract": 2,
   "parts": ["control", "segment"],
   "min": ["touch:min", "touch:min"],
   "frame": [480, 96],
   "props": [
-    {"name": "options", "about": "The choices, separated by commas, up to three.", "type": "text", "default": "Auto, Dark, Light"},
+    {"name": "options", "about": "The choices, separated by commas (or a JSON list, such as a select entity's options), up to three.", "type": "text", "default": "Auto, Dark, Light"},
     {"name": "selected", "about": "Which choice is picked, by its name in lower case.", "type": "text", "default": "auto"},
     {"name": "width", "about": "hug fits the control to its words; fill stretches it across the space.", "type": "select", "options": ["hug", "fill"], "default": "hug"},
     {"name": "state", "debug": true, "about": "default can be tapped; disabled cannot be changed; unavailable shows the setting cannot be read.", "type": "select", "options": ["default", "disabled", "unavailable"], "default": "default"}
