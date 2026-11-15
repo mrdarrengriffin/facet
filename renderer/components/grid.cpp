@@ -83,10 +83,6 @@ void build_static(lv_obj_t *r, Props p) {
   for (int i = 0; i < n; i++) {
     lv_obj_t *c = fx::grid_cell(r, spans[i].first, spans[i].second);
     fx::slot(c, "cell");
-    const char *bx = p["_boxed"][std::to_string(i)] | "";  // a node with "box": its cell in the card frame (Home: every card boxed, #200)
-    if (!strcmp(bx, "pad")) for (const char *t : {"bg:surface", "border:line", "radius:card", "card-pad"}) fx::use(c, t);
-    else if (*bx) for (const char *t : {"bg:surface", "inset-line:line", "radius:card"}) fx::use(c, t);  // "frame": the component pads itself
-                                                                                                    // (the State readout); the line takes no room
     if (!outline) continue;
     // the workbench sample: each cell a named outline
     if (row) fx::use(c, "h:list-row-h");
