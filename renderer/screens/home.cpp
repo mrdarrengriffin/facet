@@ -243,7 +243,7 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   for (Var pg : pages.as<ArduinoJson::JsonArrayConst>())
     if (pid == (pg["id"] | "")) target = pg;
   if (t == "page") { p["label"] = label.empty() ? page_name(target) : label; kind = target["kind"] | ""; }
-  else if (t == "header") {}  // its label is its title (below)
+  else if (t == "header" || t == "mode") {}  // a header's label is its title (below); a mode card shows its choices only
   else if (label.empty()) bind(p, "label", e, "name");
   else p["label"] = label;
   const std::string comp_s = comp;
@@ -265,6 +265,13 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     tx["e"] = e, tx["a"] = "brightness", tx["fmt"] = "pct";  // the number (slider_row shows it)
     ArduinoJson::JsonObject on = n["on"].to<ArduinoJson::JsonObject>();
     for (const char *ev : {"change", "input"}) { on[ev]["do"] = "light.brightness"; on[ev]["e"] = e; }
+  } else if (comp_s == "segmented") {  // a mode card (#200 P3): the select's options, the chosen one = its state; a tap picks
+    ArduinoJson::JsonObject o = p["options"].to<ArduinoJson::JsonObject>();
+    o["e"] = e, o["a"] = "options";
+    bind(p, "selected", e, "state");
+    p["width"] = "fill";
+    ArduinoJson::JsonObject on = n["on"]["change"].to<ArduinoJson::JsonObject>();
+    on["do"] = "entity.option", on["e"] = e;
   } else if (comp_s == "stat") {  // a Stat card (#200): the entity's state as the big value, its name as the label
     bind(p, "value", e, "state");
     p["align"] = "start";

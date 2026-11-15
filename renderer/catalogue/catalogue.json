@@ -3497,7 +3497,7 @@
      "name": "options",
      "type": "text",
      "bindable": true,
-     "about": "The choices, separated by commas, up to three."
+     "about": "The choices, separated by commas (or a JSON list, such as a select entity's options), up to three."
     },
     {
      "name": "selected",
@@ -3530,7 +3530,8 @@
    "events": {
     "change": [
      "vacuum.control",
-     "screen.param"
+     "screen.param",
+     "entity.option"
     ],
     "open": [
      "nav.open"
@@ -4797,6 +4798,7 @@
   "automation.trigger",
   "button.press",
   "entity.toggle",
+  "entity.option",
   "ha.connect",
   "ha.entities"
  ],
@@ -5351,6 +5353,22 @@
    }
   },
   {
+   "do": "entity.option",
+   "about": "Pick one of a select's options (an input_select or a select, such as a house mode): the option whose name matches the event's choice, any case.",
+   "fields": [
+    {
+     "name": "e",
+     "type": "entity",
+     "need": "required",
+     "limits": "input_select.x or select.x"
+    }
+   ],
+   "example": {
+    "do": "entity.option",
+    "e": "input_select.house_mode"
+   }
+  },
+  {
    "do": "entity.toggle",
    "about": "Toggle a fan, an input boolean or an automation (an automation: enable / disable).",
    "fields": [
@@ -5555,6 +5573,17 @@
     "m": "grid"
    }
   },
+  "mode": {
+   "domains": "input_select,select",
+   "sizes": "",
+   "taps": "none",
+   "detail": "",
+   "grid": "3xhalf,2xhalf",
+   "component": {
+    "s": "segmented",
+    "m": "segmented"
+   }
+  },
   "entity": {
    "domains": "*",
    "sizes": "s",
@@ -5622,5 +5651,5 @@
    }
   }
  },
- "hash": "8dbbeb85"
+ "hash": "fab84adc"
 }

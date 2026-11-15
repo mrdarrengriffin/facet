@@ -59,6 +59,15 @@ export default {
       const ok = send(t, deck([{ t: 'chips', es: ['light.test_a', 'scene.test_film'] }, { t: 'stats', es: ['sensor.test_a'], size: '3xhalf' }], rev++));
       t.ok(ok.ok, `taken: ${JSON.stringify(ok.errors ?? '')}`);
     } },
+    { name: 'a Mode switch: the select\'s options, the chosen one = its state; a tap picks one (entity.option)', async run(t) {
+      t.ha.s['input_select.test_mode'] = { '': 'Home', friendly_name: 'House mode', options: '["Home","Away","Night"]' };
+      await t.device(deck([{ t: 'mode', e: 'input_select.test_mode' }]));
+      t.b.settle(800); t.ha.push(); t.b.settle(600);
+      for (const n of [/^home$/i, /^away$/i, /^night$/i]) t.has(t.texts(), n, `a choice: ${n}`);
+      t.ha.calls = []; t.tap(/^night$/i); t.b.settle(600);
+      t.ok(t.ha.calls.some((c) => c.service === 'input_select.select_option' && c.entity === 'input_select.test_mode' && (c.data?.option ?? '') === 'Night'),
+        `a tap picks Night: ${JSON.stringify(t.ha.calls).slice(0, 200)}`);
+    } },
     { name: 'the slim and wide sizes only where the component lists them; a Header has a label and no entity', async run(t) {
       await t.device(DECK);
       let rev = 20;
@@ -80,6 +89,7 @@ export default {
       t.eq(s.cards?.stat?.grid, 'half,1x1,2xhalf', 'Stat: half, 1x1, 2xhalf');
       t.eq(s.cards?.chips?.grid, '3xhalf,2xhalf', 'Chip row: the full row or two wide');
       t.eq(s.cards?.stats?.grid, '3x1,3xhalf', 'Stat row: full width');
+      t.eq(s.cards?.mode?.grid, '3xhalf,2xhalf', 'Mode switch: the full row or two wide');
       t.eq(s.cards?.slider?.grid, '2xhalf,3xhalf', 'Slider strip: two wide or the full row');
       t.eq(s.grid_sizes, '1x1,2x1,2x2,half', 'every type keeps the usual four');
     } },
