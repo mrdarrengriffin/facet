@@ -110,8 +110,10 @@ const feeds = Object.keys((schema.feeds as { list: Record<string, unknown> }).li
   <p>
     The deck is the panel's list of pages: Home and its cards, then the screens you swipe to, in order, each with its
     settings. Every built-in screen is always on the panel: its page in the deck holds only its settings, and a Home
-    card is how it is opened. A Home card that fits only one size says so (the State readout is a half only), and the
-    panel refuses it at any other size. An agent or Home Assistant can send one. The routes and
+    card is how it is opened. A Home card that fits only some sizes says so (the State readout is a half only; Header,
+    Stat, Slider strip, Chip row and Stat row take the slim and wide sizes <code>2xhalf</code>, <code>3xhalf</code> and
+    <code>3x1</code> only where they are made for them), and the panel refuses it at any other size. A Chip row or a
+    Stat row lists its entities in <code>es</code> instead of <code>e</code>. An agent or Home Assistant can send one. The routes and
     actions that take specs and decks are on <a href={url('/inside/schema/')}>Schema</a>.
   </p>
 </Docs>

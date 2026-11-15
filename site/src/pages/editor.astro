@@ -14,6 +14,7 @@ const headings: Heading[] = [
   { depth: 3, slug: 'add', text: 'Adding a card' },
   { depth: 3, slug: 'search', text: 'Searching your entities' },
   { depth: 3, slug: 'sizes', text: 'Sizes and changing a card' },
+  { depth: 3, slug: 'variety', text: 'More than tiles' },
   { depth: 3, slug: 'move', text: 'Moving a card' },
   { depth: 2, slug: 'built-in', text: 'Built-in screens and Settings' },
   { depth: 2, slug: 'save', text: 'Saving' },
@@ -72,7 +73,10 @@ const headings: Heading[] = [
     it is first: a <strong>Screen</strong> (a card that opens one of your screens or a built-in one),
     <strong>Light</strong>, <strong>Switch</strong>, <strong>Media</strong>, <strong>Climate</strong>,
     <strong>Cover</strong>, <strong>Sensor</strong> or <strong>Other</strong>; on a half there is also
-    <strong>State readout</strong>. A Sensor asks what it measures: temperature, humidity, power, energy, battery, doors
+    <strong>State readout</strong>. For variety there are also <strong>Header</strong> (a title row across Home),
+    <strong>Stat</strong> (a big number and its name), <strong>Slider strip</strong> (a light's brightness as a bar),
+    <strong>Chip row</strong> (a row of pills to switch several things) and <strong>Stat row</strong> (up to three
+    numbers side by side): see <a href="#variety">More than tiles</a>. A Sensor asks what it measures: temperature, humidity, power, energy, battery, doors
     and windows, or motion and presence. Then every entity of that type is listed, each with its value; type part of
     its name or entity id to narrow the list. Typing straight away, before picking a type, searches everything.
   </p>
@@ -96,7 +100,7 @@ const headings: Heading[] = [
   </p>
 
   <h3 id="sizes">Sizes and changing a card</h3>
-  <p>Every card can be any size. The grid is three squares across on both panels.</p>
+  <p>A tile or a card can be any of these sizes; the cards in <a href="#variety">More than tiles</a> take their own. The grid is three squares across on both panels.</p>
   <figure class="page-shot" style="max-width: 420px"><Shot id="home" alt="A Home with a 2 by 1 Weather card, a 1 by 1 Clock card, a 2 by 2 Media card, a 1 by 1 light card and two half sensor cards." /><figcaption>2 × 1 and 1 × 1, 2 × 2 and 1 × 1, then two halves</figcaption></figure>
   <ul>
     <li><strong>1 × 1</strong>: a tile, the name top-left and the icon top-right, the state at the bottom. A long name takes two lines.</li>
@@ -109,6 +113,24 @@ const headings: Heading[] = [
     the grid in reading order; the cards after a resized one move to fit. A card that opens a built-in screen also shows
     that screen's look, such as Media's visual or the Calendar's view, with a row to all its settings.
   </p>
+
+  <h3 id="variety">More than tiles</h3>
+  <p>
+    Home need not be all squares. These cards have no box, or a slim one, and take only the sizes they are made for, so
+    the size choice in their settings lists only those:
+  </p>
+  <ul>
+    <li><strong>Header</strong>: a title row the full width of Home, such as <em>Living room</em>. The cards after it stay under it, so it groups them. Its name is its title.</li>
+    <li><strong>Stat</strong>: a sensor's value as a big number with its name over it, no box. Half, 1 × 1, or two squares wide and half tall.</li>
+    <li><strong>Slider strip</strong>: a light's brightness as a bar that fills as it gets brighter, its name and level on it. Drag anywhere on it to dim. Two squares wide or the full row, half tall.</li>
+    <li><strong>Chip row</strong>: up to six pills, one per light, switch, fan, scene or script, filled while it is on. A tap switches it, or runs the scene or script. The full row or two squares wide, half tall.</li>
+    <li><strong>Stat row</strong>: up to three sensors' values side by side across Home. The full width, one square or half tall.</li>
+  </ul>
+  <p>
+    A Chip row or a Stat row starts with the one entity you pick; add the others, or remove one, in the card's
+    settings under <strong>Entities</strong>.
+  </p>
+  <figure class="page-shot" style="max-width: 420px"><img src={url('/editor/variety.png')} width="720" height="720" alt="A Home with a Living room header, a chip row of three lights and a scene, a stat row of temperature, humidity and solar, a slider strip and a stat." loading="lazy" /><figcaption>A header, a chip row, a stat row, a slider strip and a stat</figcaption></figure>
 
   <h3 id="move">Moving a card</h3>
   <p>
