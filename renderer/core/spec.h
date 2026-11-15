@@ -36,6 +36,8 @@
 //              row. k counts the nodes as written; a layout node can't repeat (each).
 //   span       (Grid) [cols, rows]: a node in a static Grid's cell takes that many cells (the grid places
 //              its cells in reading order into the first free place that fits; spans stay inside its cols)
+//   box        (Grid) true: the node's cell in the card frame (surface, hairline, card padding); "frame": the frame
+//              alone (a component that pads itself, the State readout): Home's boxed cards
 //   cell       (Grid items mode) a Grid with "items" repeats this one node {c, p} per item ("$item" = the
 //              item, "$item.<key>" = a field of an object item); not a layout (no grids in grids)
 //   each       repeat the node once per item of the comma list parameter (at most EACH_MAX), "$item" in its props /
@@ -765,8 +767,9 @@ inline void check_screen(ArduinoJson::JsonVariantConst s, size_t bytes, Errs &e)
   for (ArduinoJson::JsonVariantConst n : nodes) {
     const std::string p = ".nodes[" + std::to_string(i++) + "]";
     if (!n.is<ArduinoJson::JsonObjectConst>()) { err(e, p, "bad_node", "a node is an object {c, p, on}"); continue; }
-    static const char *const NK[] = {"c", "p", "on", "pending", "in", "slot", "each", "sample", "show", "span", "cell"};
-    check_keys(n.as<ArduinoJson::JsonObjectConst>(), NK, 11, p, e);
+    static const char *const NK[] = {"c", "p", "on", "pending", "in", "slot", "each", "sample", "show", "span", "cell", "box"};
+    check_keys(n.as<ArduinoJson::JsonObjectConst>(), NK, 12, p, e);
+    if (!n["box"].isNull() && !n["box"].is<bool>() && strcmp(n["box"] | "", "frame")) err(e, p + ".box", "bad_node", "box is true (a Grid cell in the card frame, padded) or \"frame\" (the frame alone)");
     if (!n["show"].isNull()) {
       if (!ha::is_bind(n["show"])) err(e, p + ".show", "bad_bind", "show is a bind {e, ...}");
       else { PropInfo si; si.name = "show"; si.type = "text"; check_value(si, n["show"], p + ".show", e, binds); }
@@ -2215,6 +2218,7 @@ inline lv_obj_t *build(lv_obj_t *parent, const std::string &id, Props opened, st
         if (!o["in"].is<int>() || (o["in"] | -1) != me) continue;
         cells = std::max(cells, (o["slot"] | 0) + 1);
         if (o["span"].is<ArduinoJson::JsonArrayConst>()) p["_spans"][std::to_string(o["slot"] | 0)] = o["span"];
+        if ((o["box"] | false) || o["box"].is<const char *>()) p["_boxed"][std::to_string(o["slot"] | 0)] = o["box"].is<const char *>() ? "frame" : "pad";  // its cell in the card frame (Home's boxed cards)
       }
       if (cells) p["_cells"] = cells;
     }

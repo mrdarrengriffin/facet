@@ -209,6 +209,10 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
     sp.add(size == "half" || size == "2xhalf" || size == "3xhalf" ? 1 : size == "1x2" || size == "2x2" ? 4 : 2);
   }
   ArduinoJson::JsonObject p = n["p"].to<ArduinoJson::JsonObject>();
+  // every Home card boxed (#200, for now; open vs boxed may become the theme's, #214): the cards with no frame of their
+  // own sit in the card frame (the Grid cell's); tiles, cards, the Slider strip have one, a Header is a title
+  if (t == "readout") n["box"] = "frame";  // the readout pads itself
+  else if (t == "stat" || t == "spark" || t == "mode" || fw::spec::card_many(t)) n["box"] = true;
   if (fw::spec::card_many(t)) {  // several entities (#200): a Grid in the cell, one child per entity
     ArduinoJson::JsonArrayConst es = cd["es"].as<ArduinoJson::JsonArrayConst>();
     const bool chips = t == "chips";

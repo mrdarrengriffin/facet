@@ -32,7 +32,7 @@ uint32_t role_glyph(int role, int i);                               // the code 
 #include "device.h"  // dev::build_tick: the touch chip read during a long build (#94)
 
 namespace {
-enum Kind { FG, BG, BORDER, LINE, INK, PAD, GAP, PADX, RADIUS, HEIGHT, MAXH, MINW, MAXW, ABOVE, WIDTH, TYPE, SHAPE, DERIVED,
+enum Kind { FG, BG, BORDER, LINE, INSET, INK, PAD, GAP, PADX, RADIUS, HEIGHT, MAXH, MINW, MAXW, ABOVE, WIDTH, TYPE, SHAPE, DERIVED,
             TINT, OUTLINE, DIGIT, COLON, RAISE, BASE, PART, PTEXT, ICONPX };
 namespace G = fx::tgen;
 namespace S = fx::skin;
@@ -149,6 +149,7 @@ void init_defs() {
     defs.push_back({"fg:" + c, FG, i}); defs.push_back({"bg:" + c, BG, i});
     defs.push_back({"border:" + c, BORDER, i}); defs.push_back({"line:" + c, LINE, i});
     defs.push_back({"ink:" + c, INK, i});  // an icon layer's recolour (fx::icon)
+    defs.push_back({"inset-line:" + c, INSET, i});  // a hairline just inside the box that takes no layout space (a Home frame, #200)
   }
   for (int i = 0; i < fx::gen::N_SIZES; i++) {
     const std::string n = fx::gen::SIZES[i].name;
@@ -743,6 +744,10 @@ void paint(Look *L, const fw::Theme *t, int only = -1) {  // colours from the th
       if (d.k == FG) lv_style_set_text_color(s, c);
       else if (d.k == INK) { lv_style_set_image_recolor(s, c); lv_style_set_image_recolor_opa(s, LV_OPA_COVER); }
       else if (d.k == BG) { lv_style_set_bg_color(s, c); lv_style_set_bg_opa(s, LV_OPA_COVER); }
+      else if (d.k == INSET) {
+        const int hw = tok("stroke:hair", fw::stroke::hair);
+        lv_style_set_outline_color(s, c); lv_style_set_outline_width(s, hw); lv_style_set_outline_opa(s, LV_OPA_COVER); lv_style_set_outline_pad(s, -hw);
+      }
       else {
         lv_style_set_border_color(s, c); lv_style_set_border_width(s, tok("stroke:hair", fw::stroke::hair)); lv_style_set_border_opa(s, LV_OPA_COVER);
         lv_style_set_border_side(s, d.k == LINE ? LV_BORDER_SIDE_BOTTOM : LV_BORDER_SIDE_FULL);
