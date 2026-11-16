@@ -257,7 +257,7 @@ constexpr ActionDoc ACTION_DOCS[] = {
     {"script.run", "Run a Home Assistant script.", "e|entity|required|script.x", "", R"({"do":"script.run","e":"script.good_night"})", false},
     {"scene.activate", "Activate a Home Assistant scene.", "e|entity|required|scene.x", "", R"({"do":"scene.activate","e":"scene.movie"})", false},
     {"automation.trigger", "Trigger a Home Assistant automation now.", "e|entity|required|automation.x", "", R"({"do":"automation.trigger","e":"automation.lights_out"})", false},
-    {"button.press", "Press a Home Assistant button entity.", "e|entity|required|button.x", "", R"({"do":"button.press","e":"button.doorbell_chime"})", false},
+    {"button.press", "Press a Home Assistant button or input button entity.", "e|entity|required|button.x or input_button.x", "", R"({"do":"button.press","e":"button.doorbell_chime"})", false},
     {"entity.toggle", "Toggle a fan, an input boolean or an automation (an automation: enable / disable).", "e|entity|required|fan.x, input_boolean.x or automation.x", "", R"({"do":"entity.toggle","e":"fan.bedroom"})", false},
     {"ha.connect", "Set the panel's own Home Assistant link: its address and a long-lived token (kept on the panel, never shown back).", "url|text|required|http(s)://host:port, at most 128;token|text|optional|a long-lived access token (empty = keep the one set)", "", R"({"do":"ha.connect","url":"http://homeassistant.local:8123","token":"eyJhbGciOiJIUzI1NiJ9.example.token"})", false},
     {"ha.entities", "Read the entity lists the pickers offer from Home Assistant (the panel's own link).", "domains|text|optional|a comma list of domains (light, sensor, ...), empty = every domain", "", R"({"do":"ha.entities","domains":"light,media_player"})", false},
@@ -404,7 +404,8 @@ struct DomainTaps { const char *dom, *taps, *detail; };
 constexpr DomainTaps ENTITY_TAPS[] = {
     {"light", "toggle,detail,none", "light"}, {"switch", "toggle,detail,none", "light"}, {"fan", "toggle,none", ""},
     {"input_boolean", "toggle,none", ""},     {"automation", "toggle,run,none", ""},      {"script", "run,none", ""},
-    {"scene", "run,none", ""},                {"button", "run,none", ""},                 {"cover", "detail,none", "covers"},
+    {"scene", "run,none", ""},                {"button", "run,none", ""},                 {"input_button", "run,none", ""},
+    {"cover", "detail,none", "covers"},
     {"climate", "detail,none", "thermostat"}, {"media_player", "detail,none", "media"},  {"lock", "detail,none", "lock"},
     {"vacuum", "detail,none", "vacuum"}};
 inline const DomainTaps &entity_taps(const std::string &dom) {
@@ -542,7 +543,8 @@ inline void check_action(ArduinoJson::JsonVariantConst a, const char *comp, cons
   }
   if (d == "script.run" || d == "scene.activate" || d == "automation.trigger" || d == "button.press" || d == "entity.toggle") {  // the Entity tile
     const std::string en = a["e"] | "", dom = d == "entity.toggle" ? en.substr(0, en.find('.')) : d.substr(0, d.find('.'));
-    if (!entity_ok(en) || (en[0] != '$' && en.rfind(dom + ".", 0) != 0)) err(e, path + ".e", "bad_entity", "a " + dom + " entity (" + dom + ".x or $param)");
+    const bool ib = d == "button.press" && en.rfind("input_button.", 0) == 0;  // button.press takes an input button too
+    if (!entity_ok(en) || (en[0] != '$' && !ib && en.rfind(dom + ".", 0) != 0)) err(e, path + ".e", "bad_entity", "a " + dom + " entity (" + dom + ".x or $param)");
   }
   if (d.rfind("climate.", 0) == 0) {
     const std::string en = a["e"] | "";
@@ -1736,7 +1738,9 @@ inline bool run_action(Screen *s, Node &n, ArduinoJson::JsonVariantConst a, cons
   }
   if (d == "script.run" || d == "scene.activate" || d == "automation.trigger" || d == "button.press" || d == "entity.toggle") {  // the Entity tile
     const std::string tg = n.entity.substr(0, n.entity.find('.')) + ".toggle";
-    const char *svc = d == "script.run" ? "script.turn_on" : d == "scene.activate" ? "scene.turn_on" : d == "entity.toggle" ? tg.c_str() : d.c_str();
+    const bool ib = d == "button.press" && n.entity.rfind("input_button.", 0) == 0;
+    const char *svc = d == "script.run" ? "script.turn_on" : d == "scene.activate" ? "scene.turn_on" : d == "entity.toggle" ? tg.c_str()
+                      : ib ? "input_button.press" : d.c_str();
     ha_act(n, svc, n.entity.c_str());
     return true;
   }

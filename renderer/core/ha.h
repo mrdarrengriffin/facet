@@ -234,10 +234,18 @@ inline void bind_value(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject 
 // fmt "state": an entity's state in words, as HA shows it: a number with its unit ("21.4°", "0.8 W", one decimal at
 // most), a binary sensor by its device class (Open / Closed, Detected / Clear, Wet / Dry, On / Off), any other state
 // with a capital and spaces ("heat_cool" -> "Heat cool"); unavailable / unknown = "Unavailable"; no value yet = ""
+// down: the entity has no usable state now (unavailable; unknown too, except where unknown is normal: a button or
+// input button never pressed, a scene never activated, #139)
+inline bool down(const std::string &e, const std::string &st) {
+  if (st == "unavailable") return true;
+  if (st != "unknown") return false;
+  const std::string dom = e.substr(0, e.find('.'));
+  return dom != "button" && dom != "input_button" && dom != "scene";
+}
 inline std::string words(const std::string &e) {
   const std::string *st = get(e, "");
   if (!st) return "";
-  if (*st == "unavailable" || *st == "unknown") return "Unavailable";
+  if (down(e, *st)) return "Unavailable";
   const std::string dom = e.substr(0, e.find('.'));
   if (dom == "binary_sensor") {
     const std::string *dc = get(e, "device_class");
@@ -281,7 +289,7 @@ inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject ou
   if (fmt == "pct") { use(a.empty() ? "brightness" : a); out[key] = pct(e, a.empty() ? "brightness" : a.c_str()); return; }
   if (fmt == "avail") {
     use("");
-    out[key] = e.empty() || (st && st->empty()) ? "missing" : st && (*st == "unavailable" || *st == "unknown") ? "unavailable" : "default";
+    out[key] = e.empty() || (st && st->empty()) ? "missing" : st && down(e, *st) ? "unavailable" : "default";
     return;
   }
   if (fmt == "dim") {  // a dimmable light: any colour mode but onoff (HA supported_color_modes); a switch never
@@ -592,7 +600,7 @@ inline const char *act(lv_obj_t *from, const char *service, const char *entity, 
              svc == "light.turn_off" || svc == "light.toggle" || svc == "switch.toggle" ||
              svc == "switch.turn_on" || svc == "switch.turn_off" || svc == "media_player.media_play_pause" ||
              svc == "media_player.media_next_track" || svc == "media_player.media_previous_track" ||
-             svc == "script.turn_on" || svc == "scene.turn_on" || svc == "automation.trigger" || svc == "button.press" ||
+             svc == "script.turn_on" || svc == "scene.turn_on" || svc == "automation.trigger" || svc == "button.press" || svc == "input_button.press" ||
              svc == "fan.toggle" || svc == "input_boolean.toggle" || svc == "automation.toggle") {
     if (data.size()) return "no data for this action";
   } else return "action not allowed";

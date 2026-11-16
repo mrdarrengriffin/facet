@@ -224,7 +224,7 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   const std::string vt = t != "entity" ? t
       : (edom == "light" || edom == "switch" || edom == "fan" || edom == "input_boolean" || edom == "automation") ? "light"
       : edom == "cover" ? "cover" : (edom == "sensor" || edom == "binary_sensor") ? "sensor"
-      : (edom == "script" || edom == "scene" || edom == "button") ? "action" : "other";
+      : (edom == "script" || edom == "scene" || edom == "button" || edom == "input_button") ? "action" : "other";
   if (comp_s == "readout") {  // a State readout (half only): no box, no tap; the state, the accent while on, offline = mute
     sensor_icon(p, e);
     bind(p, "state", e, "state");

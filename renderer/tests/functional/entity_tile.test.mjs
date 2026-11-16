@@ -156,6 +156,18 @@ export default {
       t.wait(600);
       t.has(status(t, 'Current demand') || [], /^412 W$/, 'its state');
     } },
+    { name: 'Home: unknown is normal for a button, an input button and a scene (never pressed): available, the tap calls HA; a sensor unknown is Unavailable', async run(t) {
+      const E = { 'button.doorbell_chime': ['Doorbell chime', 'button.press'], 'input_button.reset_count': ['Reset count', 'input_button.press'], 'scene.movie_night': ['Movie night', 'scene.turn_on'] };
+      for (const [e, [f]] of Object.entries(E)) t.ha.s[e] = { '': 'unknown', friendly_name: f };
+      t.ha.s['sensor.outside_temp'] = { '': 'unknown', friendly_name: 'Outside temp' };
+      await t.device({ v: 2, rev: 9, start: 'p', pages: [{ id: 'p', kind: 'home', name: 'Home', cards: [...Object.keys(E).map((e) => ({ t: 'entity', e, size: '1x1', tap: 'run' })), { t: 'entity', e: 'sensor.outside_temp', size: '1x1', tap: 'none' }] }] });
+      t.wait(600);
+      for (const [e, [f, svc]] of Object.entries(E)) {
+        t.ok(!(status(t, f) || []).some((s) => /unavailable/i.test(s)), `${f}: not Unavailable (${JSON.stringify(status(t, f))})`);
+        t.tap(name(f)); t.call({ service: svc, entity: e }, `${f}: tap`);
+      }
+      t.has(status(t, 'Outside temp') || [], /^unavailable$/i, 'a sensor at unknown is still Unavailable');
+    } },
     { name: 'Home: HA disconnect + reconnect: every light line comes back', async run(t) {
       await t.device('house');
       const before = Object.keys(HOME_LIGHTS).map((l) => (status(t, l) || []).join());

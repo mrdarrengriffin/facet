@@ -5300,13 +5300,13 @@
   },
   {
    "do": "button.press",
-   "about": "Press a Home Assistant button entity.",
+   "about": "Press a Home Assistant button or input button entity.",
    "fields": [
     {
      "name": "e",
      "type": "entity",
      "need": "required",
-     "limits": "button.x"
+     "limits": "button.x or input_button.x"
     }
    ],
    "example": {
@@ -5502,6 +5502,10 @@
      "taps": "run,none",
      "detail": ""
     },
+    "input_button": {
+     "taps": "run,none",
+     "detail": ""
+    },
     "cover": {
      "taps": "detail,none",
      "detail": ""
@@ -5528,5 +5532,5 @@
    }
   }
  },
- "hash": "78f3ae74"
+ "hash": "3e90ea83"
 }
