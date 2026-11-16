@@ -165,6 +165,16 @@
 #include "esphome/components/api/api_server.h"
 #endif
 #include "fw_bundle_gen.h"
+// the installed version (the same rule as fw::update::version(), esphome/board/fw_update.h): the build's own
+// (bundle.mjs --version), else the YAML's project version; crash records and the report header say this one (#184)
+inline const char *facet_build_version() {
+  if (fw::bundle::VERSION[0]) return fw::bundle::VERSION;
+#ifdef ESPHOME_PROJECT_VERSION
+  return ESPHOME_PROJECT_VERSION;
+#else
+  return "?";
+#endif
+}
 #include "src/misc/lv_timer_private.h"  // lv_timer_t period (screenshot: hold LVGL's refresh)
 namespace fw::report_screen { void set_board(const std::string &b); }  // screens/report.cpp
 extern "C" char facet_overflow_task[20];  // esphome/board/stack_guard.h: the task that overflowed its stack
@@ -1815,12 +1825,7 @@ inline void begin() {
     std::string c;
     char t[160];
     snprintf(t, sizeof t, "Crash before boot %u (firmware %s, built %s):\n", (unsigned) K.boot,
-#ifdef ESPHOME_PROJECT_VERSION
-             ESPHOME_PROJECT_VERSION,
-#else
-             "?",
-#endif
-             built());
+             facet_build_version(), built());
     c = t;
     capture = &c;
     esphome::esp32::crash_handler_log();  // its lines also go into the ring
@@ -1914,12 +1919,7 @@ inline void send(AsyncWebServerRequest *request) {
   const uint32_t now = up_s();
   out(fw::report::HOWTO);  // what to do with it, first (the page's steps say the same)
   snprintf(t, sizeof t, "Facet problem report\nfirmware %s, board %s, built %s\nuptime %s, now %s\n\n",
-#ifdef ESPHOME_PROJECT_VERSION
-           ESPHOME_PROJECT_VERSION,
-#else
-           "?",
-#endif
-           FW_DEVICE_BOARD, built(), fw::report::dur(now).c_str(),
+           facet_build_version(), FW_DEVICE_BOARD, built(), fw::report::dur(now).c_str(),
            epoch_now() ? clock_text(epoch_now()).c_str() : "unknown (no time yet)");
   out(t);
   Kept *k = (Kept *) malloc(sizeof(Kept));  // a copy, so the ring can go on while this sends (PSRAM)
