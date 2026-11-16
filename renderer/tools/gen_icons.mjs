@@ -80,6 +80,9 @@ const outline = (name, src) => {
   }
   const [f, l] = [pts[0], pts[pts.length - 1]];
   if (Math.hypot(f[0] - l[0], f[1] - l[1]) < 1e-6) pts.pop();
+  // turned, the outline sweeps a circle about the box centre: past radius 12 it clips at some headings (the 24 box)
+  const far = pts.reduce((m, [x, y]) => Math.max(m, Math.hypot(x - 12, y - 12)), 0);
+  if (far > 12) die(`${name}: turn icons stay within radius 12 of the centre (a point at ${far.toFixed(2)} clips when turned)`);
   return pts;
 };
 for (const n of t.compare.icons) if (!names.has(n)) die(`compare: ${n} is not an icon`);
