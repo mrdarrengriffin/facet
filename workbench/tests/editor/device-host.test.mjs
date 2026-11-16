@@ -43,8 +43,9 @@ function bundle(device) {
 }
 
 /** a panel: its deck, its HA values, Save answered by `answer(body)` */
-async function openPanel(device, { answer = () => ({ ok: true, status: 'applied', rev: 2 }) } = {}) {
+async function openPanel(device, { answer = () => ({ ok: true, status: 'applied', rev: 2 }), extra = [] } = {}) {
   const dist = bundle(device), deck = structuredClone(DECK);
+  deck.pages.push(...structuredClone(extra));  // pages a test adds (a screen this firmware does not have)
   const ctx = await (await launch()).newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
   const page = await ctx.newPage();
   const P = { page, wants: [], posts: [], errors: [], deck, async done() { await ctx.close(); } };
@@ -100,6 +101,22 @@ const homeCards = (deck, id) => deck.pages.find((p) => p.id === id).cards;
 
 for (const device of ['guition', 'waveshare']) {
   describe(`device host (${device})`, () => {
+    it('a deck page for a screen this firmware does not have (saved by another version): the editor opens, lists it Removed, Save leaves it out', async () => {
+      const gone = { id: 'gone', kind: 'retired_screen', params: { mode: 'x' } };
+      const P = await openPanel(device, { extra: [gone] });
+      try {
+        assert.deepEqual(P.errors, [], `no script error: ${P.errors.join(' | ')}`);
+        const ch = await P.page.evaluate(() => window.__v1.changes());
+        assert.ok(ch.some((c) => c.what === 'Removed'), `listed as Removed: ${JSON.stringify(ch)}`);
+        await P.page.locator('#v1-save').click(); await settle(P.page, 200);
+        await P.page.locator('.v1-acts .btn.primary', { hasText: 'Save' }).click(); await settle(P.page);
+        const sent = P.posts.filter((p) => p.kind === 'deck').at(-1);
+        assert.ok(sent, 'Save posted the deck');
+        assert.ok(!sent.spec.pages.some((p) => p.id === 'gone'), 'the page the panel would refuse is left out');
+        assert.ok(sent.spec.pages.some((p) => p.id === 'living') && sent.spec.pages.some((p) => p.id === 'clock'), 'the rest is kept');
+        assert.deepEqual(P.errors, [], `no script error after Save: ${P.errors.join(' | ')}`);
+      } finally { await P.done(); }
+    });
     it('asks the panel only for the entities its deck names, across its Homes', async () => {
       const P = await openPanel(device);
       assert.ok((await drawn(P.page)).some((t) => t.includes('ceiling')), 'the Living room Home draws');

@@ -82,6 +82,22 @@ function today(): Draft {
 }
 const panel = { rev: 3, runs: host.panel ? factory() : today(), before: [] as { rev: number; runs: Draft }[] };
 /** what a panel runs, as the editor holds it (the token never: its last four only) */
+/** the draft without the pages for screens this firmware does not have (a deck saved by another version): the panel
+ *  refuses a deck that names one, so the editor drops them (with the cards and header buttons that open them), and the
+ *  changes list shows each as Removed; the panel's own copy is left as it is until a Save */
+function known(d: Draft): Draft {
+  const keep = (p: Page) => own(p) || !!boot.screens[p.kind];
+  const gone = new Set(d.pages.filter((p) => !keep(p)).map((p) => p.id));
+  if (!gone.size) return d;
+  d.pages = d.pages.filter(keep);
+  for (const p of d.pages) {
+    if (p.cards) p.cards = p.cards.filter((c) => !(c.page && gone.has(c.page)));
+    const b = p.header_actions?.button;
+    if (b && gone.has(b)) delete p.header_actions!.button;
+  }
+  if (gone.has(d.start)) d.start = d.pages[0]?.id ?? d.start;
+  return d;
+}
 function fromPanel(st: PanelState): Draft {
   return { pages: clone(st.deck.pages), start: st.deck.start, settings: { ...defaults(), ...st.settings }, ha: { url: st.ha.url, token: '', hint: st.ha.hint, state: st.ha.state, why: st.ha.why } };
 }
@@ -102,12 +118,15 @@ function allDomains() {
 }
 let draft = clone(panel.runs);
 
-function paramVal(p: Page, k: string) { return p.params?.[k] ?? boot.screens[p.kind].params[k].default ?? ''; }
+/** a built-in screen's parameters; {} for a page whose screen this firmware does not have (a deck saved by another version):
+ *  the page stays in the deck as it is, the editor leaves it alone */
+const paramsOf = (kind: string) => boot.screens[kind]?.params ?? {};
+function paramVal(p: Page, k: string) { return p.params?.[k] ?? paramsOf(p.kind)[k]?.default ?? ''; }
 function toDeck(d: Draft, rev: number) {
   const pages = d.pages.map((p) => {
     const o: Page = { ...clone(p) };
     if (!own(p) && o.params) {
-      const set = Object.entries(o.params).filter(([k, v]) => v !== (boot.screens[p.kind].params[k]?.default ?? ''));
+      const set = Object.entries(o.params).filter(([k, v]) => v !== (paramsOf(p.kind)[k]?.default ?? ''));
       if (set.length) o.params = Object.fromEntries(set); else delete o.params;
     }
     return o;
@@ -232,7 +251,7 @@ function changes(a: Draft, b: Draft): Change[] {
       out.push(...cardChanges(pa, pb, a, b));
       continue;
     }
-    for (const [k, p] of Object.entries(boot.screens[pb.kind].params)) {
+    for (const [k, p] of Object.entries(paramsOf(pb.kind))) {
       if (p.type === 'hidden') continue;
       const va = paramVal(pa, k), vb = paramVal(pb, k);
       if (va !== vb) out.push({ where: pname(pb), what: p.label ?? k, was: va || 'none', now: vb || 'none' });
@@ -340,7 +359,7 @@ function preview(p: Page, cssW: number, label: string) {
   s.canvas.style.height = `${cssW}px`;
   s.canvas.className = 'v1-canvas';
   if (own(p)) s.render('home', { page: p.id, editing: true }, plight(), accent());  // no Add your cards box under the editor's squares
-  else s.render('spec', { screen: p.kind, ...Object.fromEntries(Object.keys(boot.screens[p.kind].params).map((k) => [k, paramVal(p, k)])) }, plight(), accent());
+  else s.render('spec', { screen: p.kind, ...Object.fromEntries(Object.keys(paramsOf(p.kind)).map((k) => [k, paramVal(p, k)])) }, plight(), accent());
   return s;
 }
 function freeStages() { for (const s of stages.splice(0)) s.free(); }
@@ -1359,7 +1378,7 @@ function factoryBtn() {
     panel.rev++;
     panel.runs = st ? fromPanel(st) : factory();
     if (st) panel.rev = st.deck.rev;
-    draft = clone(panel.runs);
+    draft = known(clone(panel.runs));
     sel = draft.start;
     side = 'screen';
     edit(() => {});
@@ -1421,7 +1440,7 @@ async function load() {
   if (host.panel && first) {  // what the panel runs: the editor starts from it
     first = false;
     const st = await host.load();
-    if (st) { panel.runs = fromPanel(st); panel.rev = st.deck.rev; draft = clone(panel.runs); sel = draft.start; }
+    if (st) { panel.runs = fromPanel(st); panel.rev = st.deck.rev; draft = known(clone(panel.runs)); sel = draft.start; }
     void host.entities(listDomains()).then((e) => { if (e) { options = e.lists; ents = { state: e.state, why: e.why }; } render(); });
     named = true;
   }
