@@ -234,6 +234,22 @@ A failed check stops the day.
 
 To build the images locally instead (no publishing): `esphome/release.sh V [out dir]` builds from a worktree of the tag.
 
+## A fix release from a branch (0.5.1)
+
+When main already holds the next feature release's work, a fix release is cut from the last release's tag, not main:
+
+1. `git worktree add -b release-X.Y <dir> vX.Y.0`, then `git cherry-pick -x <fix>` for each fix (only fixes, each with
+   its issue on the milestone `X.Y.Z`); run the tests the fixes touch there.
+2. Write `release-notes/X.Y.Z.md` (a headline, Fixed, After updating; then `release-notes.mjs changes X.Y.Z vX.Y.0`
+   and `check`), draft its Updates entry, `node firmware/release-prep.mjs X.Y.Z`, and
+   `node renderer/tools/features.mjs since --write X.Y.Z` (the release channel; the check fails without it).
+3. CI only runs on main and pull requests, and the release waits for CI on the tagged commit: open a **draft PR**
+   from `release-X.Y` to main ("for CI only, not to be merged") before tagging, and tag once it is green.
+4. Commit "Release: X.Y.Z", `git tag -a vX.Y.Z`, push the branch and the tag; the release workflow builds and
+   publishes as for any release. Close the draft PR; keep the branch for a later X.Y.Z+1.
+5. On main: the notes and the Updates entry (copied), and `release.stable` in `renderer/features.json` set to X.Y.Z
+   by hand (not `since --write`: that would stamp main's unreleased features).
+
 ## Task references
 
 Code comments and commit messages that say `facet-NNN` refer to an item on the public project board,
