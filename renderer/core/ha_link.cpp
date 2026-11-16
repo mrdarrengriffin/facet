@@ -16,7 +16,7 @@ namespace fw {
 namespace dev {
 namespace ha_link {
 namespace {
-constexpr size_t CAP = 160;  // a captured string's most bytes (ids and names are shorter; longer ones are cut)
+constexpr size_t CAP = 256;  // a captured string's most bytes (an entity id is at most 255; longer names are cut)
 // what a read keeps: at most PER entities a domain and BUDGET counted bytes in all (the heap adds its own per block; a
 // house runs to thousands of sensors: kept whole they ran the 480 panel out of heap mid-read); the rest is counted,
 // left_out(domain)

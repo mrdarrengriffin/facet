@@ -69,6 +69,8 @@ export default {
     const H = (cards) => JSON.stringify({ v: 2, rev: 5, start: 'h', pages: [{ id: 'h', kind: 'home', cards }, { id: 'w', kind: 'weather' }] });
     ok(spec('check_dev', H([{ t: 'light', e: 'light.x', size: 's', tap: 'toggle' }, { t: 'page', page: 'w', size: 'l' }])).ok, 'light and page cards pass');
     ok(dc(H([{ t: 'light', e: 'cover.x', size: 's' }])).includes('bad_entity'), 'a card takes only its domains');
+    ok(spec('check_dev', H([{ t: 'light', e: 'light.' + 'a'.repeat(249), size: 's' }])).ok, 'an entity id of 255 characters passes');
+    ok(dc(H([{ t: 'light', e: 'light.' + 'a'.repeat(250), size: 's' }])).includes('bad_entity'), 'an entity id over 255 characters is refused');
     ok(dc(H([{ t: 'media', e: 'media_player.x', size: 's' }])).includes('bad_size'), 'a card takes only its sizes');
     ok(dc(H([{ t: 'light', e: 'light.x', size: 'm', tap: 'page' }])).includes('bad_tap'), 'a card takes only its taps');
     ok(dc(H([{ t: 'page', page: 'nope', size: 'm' }])).includes('bad_page'), 'a page card names a page of the deck');

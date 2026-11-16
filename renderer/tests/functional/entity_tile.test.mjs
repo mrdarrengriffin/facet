@@ -148,6 +148,14 @@ export default {
       t.eq(String(ink('Sofa table', /^\d+%$/) || '').toUpperCase(), want, `on after the change: ${set.id} accent text`);
       t.eq(String(tileBg(t, 'Sofa table') || '').toUpperCase(), C.surface[light ? 'light' : 'dark'].toUpperCase(), 'still the surface');
     } },
+    { name: 'Home: a sensor card with a 110-character entity id (HA allows 255) is taken and shows its state', async run(t) {
+      const e = 'sensor.octopus_energy_electricity_' + 'a1b2c3d4e5'.repeat(6) + '_current_demand_now';
+      t.ok(e.length >= 110, `id length ${e.length}`);
+      t.ha.s[e] = { '': '412', friendly_name: 'Current demand', unit_of_measurement: 'W' };
+      await t.device({ v: 2, rev: 9, start: 'p', pages: [{ id: 'p', kind: 'home', name: 'Home', cards: [{ t: 'sensor', e, size: '1x1' }] }] });
+      t.wait(600);
+      t.has(status(t, 'Current demand') || [], /^412 W$/, 'its state');
+    } },
     { name: 'Home: HA disconnect + reconnect: every light line comes back', async run(t) {
       await t.device('house');
       const before = Object.keys(HOME_LIGHTS).map((l) => (status(t, l) || []).join());

@@ -479,7 +479,7 @@ inline void err(Errs &e, const std::string &path, const char *code, const std::s
 inline bool entity_ok(const std::string &s) {
   if (!s.empty() && s[0] == '$') return s.size() > 1;
   const size_t dot = s.find('.');
-  if (dot == std::string::npos || dot == 0 || dot + 1 >= s.size() || s.size() > 64) return false;
+  if (dot == std::string::npos || dot == 0 || dot + 1 >= s.size() || s.size() > 255) return false;
   for (char c : s)
     if (!(islower((unsigned char) c) || isdigit((unsigned char) c) || c == '_' || c == '.')) return false;
   return true;
@@ -881,7 +881,7 @@ inline void check_card(ArduinoJson::JsonVariantConst c, const std::string &p, co
     }
   } else if (*ct->domains) {
     const size_t dot = ent.find('.');
-    if (dot == std::string::npos || !csv_has(ct->domains, ent.substr(0, dot))) err(e, p + ".e", "bad_entity", std::string("a ") + t + " card takes " + ct->domains + " entities");
+    if (dot == std::string::npos || !entity_ok(ent) || !csv_has(ct->domains, ent.substr(0, dot))) err(e, p + ".e", "bad_entity", std::string("a ") + t + " card takes " + ct->domains + " entities");
   } else if (!ent.empty()) err(e, p + ".e", "bad_card", "a page card has no entity");
   if (!csv_has(GRID_SIZES, size) && !csv_has(ct->sizes, size))
     err(e, p + ".size", "bad_size", std::string("a card's size is ") + GRID_SIZES + " (old decks: " + ct->sizes + ")");

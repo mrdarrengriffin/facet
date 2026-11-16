@@ -9,7 +9,7 @@ namespace fw::json {
 // object's end; the path = each open container's key (object) / index (array), held per depth, nothing else
 struct Sax {
   static constexpr int DEPTH = 10;
-  static constexpr size_t CAP = 200;
+  static constexpr size_t CAP = 256;  // an entity id is at most 255 bytes
   struct F { bool obj; bool want_key; int idx; std::string key; };
   F st[DEPTH];
   int depth = 0;
