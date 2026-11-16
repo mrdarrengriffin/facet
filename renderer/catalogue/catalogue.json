@@ -3497,7 +3497,7 @@
      "name": "options",
      "type": "text",
      "bindable": true,
-     "about": "The choices, separated by commas (or a JSON list, such as a select entity's options), up to three."
+     "about": "The choices, separated by commas, up to three."
     },
     {
      "name": "selected",
@@ -3530,8 +3530,7 @@
    "events": {
     "change": [
      "vacuum.control",
-     "screen.param",
-     "entity.option"
+     "screen.param"
     ],
     "open": [
      "nav.open"
@@ -3603,16 +3602,6 @@
    "name": "Slider",
    "update": true,
    "props": [
-    {
-     "name": "look",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "line",
-      "bar"
-     ],
-     "about": "line is the thin track with a round knob; bar makes the whole box the track, filled up to the value with no knob, for a slim strip such as a light on Home."
-    },
     {
      "name": "value",
      "type": "range",
@@ -3694,22 +3683,6 @@
      "about": "Where the slider is, from 0 to 100."
     },
     {
-     "name": "look",
-     "type": "select",
-     "bindable": true,
-     "options": [
-      "line",
-      "bar"
-     ],
-     "about": "line is the name, a thin slider and the value in a row; bar makes the whole row the slider, a bar that fills up to the value with the name and the value on it (a light on Home)."
-    },
-    {
-     "name": "fit",
-     "type": "bool",
-     "bindable": true,
-     "about": "Makes the name before the slider as wide as its words (at most layout strip-name, then ...) instead of the short fixed width, for a longer name such as a light's on Home."
-    },
-    {
      "name": "text",
      "type": "text",
      "bindable": true,
@@ -3731,13 +3704,11 @@
    "events": {
     "change": [
      "media.control",
-     "cover.control",
-     "light.brightness"
+     "cover.control"
     ],
     "input": [
      "media.control",
-     "cover.control",
-     "light.brightness"
+     "cover.control"
     ],
     "open": [
      "nav.open"
@@ -3948,12 +3919,6 @@
       "centre"
      ],
      "about": "Where the label and the value sit in the stat's width: start (the left, for a column of facts) or centre (under a centred hero, such as the Energy screen's price now and next)."
-    },
-    {
-     "name": "divider",
-     "type": "bool",
-     "bindable": true,
-     "about": "A hairline at its start, to part it from the stat before it (a Stat row on Home)."
     },
     {
      "name": "state",
@@ -4798,7 +4763,6 @@
   "automation.trigger",
   "button.press",
   "entity.toggle",
-  "entity.option",
   "ha.connect",
   "ha.entities"
  ],
@@ -5369,22 +5333,6 @@
    }
   },
   {
-   "do": "entity.option",
-   "about": "Pick one of a select's options (an input_select or a select, such as a house mode): the option whose name matches the event's choice, any case.",
-   "fields": [
-    {
-     "name": "e",
-     "type": "entity",
-     "need": "required",
-     "limits": "input_select.x or select.x"
-    }
-   ],
-   "example": {
-    "do": "entity.option",
-    "e": "input_select.house_mode"
-   }
-  },
-  {
    "do": "ha.connect",
    "about": "Set the panel's own Home Assistant link: its address and a long-lived token (kept on the panel, never shown back).",
    "fields": [
@@ -5538,63 +5486,6 @@
     "m": "section_header"
    }
   },
-  "slider": {
-   "domains": "light",
-   "sizes": "",
-   "taps": "none",
-   "detail": "",
-   "grid": "2xhalf,3xhalf",
-   "component": {
-    "s": "slider_row",
-    "m": "slider_row"
-   }
-  },
-  "chips": {
-   "domains": "light,switch,input_boolean,fan,scene,script",
-   "sizes": "",
-   "taps": "none",
-   "detail": "",
-   "grid": "3xhalf,2xhalf",
-   "many": 6,
-   "component": {
-    "s": "grid",
-    "m": "grid"
-   }
-  },
-  "stats": {
-   "domains": "sensor,binary_sensor,number,input_number",
-   "sizes": "",
-   "taps": "none",
-   "detail": "",
-   "grid": "3x1,3xhalf",
-   "many": 3,
-   "component": {
-    "s": "grid",
-    "m": "grid"
-   }
-  },
-  "mode": {
-   "domains": "input_select,select",
-   "sizes": "",
-   "taps": "none",
-   "detail": "",
-   "grid": "3xhalf,2xhalf",
-   "component": {
-    "s": "segmented",
-    "m": "segmented"
-   }
-  },
-  "spark": {
-   "domains": "sensor",
-   "sizes": "",
-   "taps": "none",
-   "detail": "",
-   "grid": "2xhalf,3xhalf",
-   "component": {
-    "s": "grid",
-    "m": "grid"
-   }
-  },
   "entity": {
    "domains": "*",
    "sizes": "s",
@@ -5662,5 +5553,5 @@
    }
   }
  },
- "hash": "6ae2c4ef"
+ "hash": "a46f796b"
 }

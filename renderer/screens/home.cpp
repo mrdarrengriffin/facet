@@ -36,7 +36,6 @@
 #include "fw.h"
 #include "fx.h"
 #include "spec.h"
-#include "history.h"
 #include "device.h"
 
 namespace {
@@ -205,57 +204,10 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   n["slot"] = slot;
   {  // the span in the grid's half rows: a square is two
     ArduinoJson::JsonArray sp = n["span"].to<ArduinoJson::JsonArray>();
-    sp.add(size[0] == '3' ? 3 : size[0] == '2' ? 2 : 1);  // 3x... = the full width (homeCols 3)
-    sp.add(size == "half" || size == "2xhalf" || size == "3xhalf" ? 1 : size == "1x2" || size == "2x2" ? 4 : 2);
+    sp.add(size[0] == '2' ? 2 : 1);
+    sp.add(size == "half" ? 1 : size == "1x2" || size == "2x2" ? 4 : 2);
   }
   ArduinoJson::JsonObject p = n["p"].to<ArduinoJson::JsonObject>();
-  if (fw::spec::card_many(t)) {  // several entities (#200): a Grid in the cell, one child per entity
-    ArduinoJson::JsonArrayConst es = cd["es"].as<ArduinoJson::JsonArrayConst>();
-    const bool chips = t == "chips";
-    p["aspect"] = chips ? "hug" : "row", p["gap"] = chips ? "near" : "group", p["cols"] = chips ? (int) es.size() : (int) std::max<size_t>(1, es.size());
-    const int in = (int) nodes.size() - 1;
-    int k = 0;
-    for (ArduinoJson::JsonVariantConst x : es) {
-      const std::string id = x | "", d = id.substr(0, id.find('.'));
-      ArduinoJson::JsonObject c = nodes.add<ArduinoJson::JsonObject>();
-      c["in"] = in, c["slot"] = k++;
-      ArduinoJson::JsonObject cp = c["p"].to<ArduinoJson::JsonObject>();
-      if (chips) {  // a pill: the name, filled while on; a tap toggles it (a scene / script: runs it)
-        c["c"] = "button";
-        bind(cp, "label", id, "name");
-        cp["size"] = "small";
-        if (d == "scene" || d == "script") cp["kind"] = "secondary";
-        else { ArduinoJson::JsonObject kd = cp["kind"].to<ArduinoJson::JsonObject>(); kd["e"] = id, kd["map"]["on"] = "primary", kd["else"] = "secondary"; }
-        set_tap(c, d == "scene" || d == "script" ? "run" : "toggle", id, "", "", "");
-      } else {  // a Stat: the state as the value, the name as the label
-        c["c"] = "stat";
-        bind(cp, "label", id, "name");
-        bind(cp, "value", id, "state");
-        cp["size"] = "headline", cp["align"] = "start";
-        if (k > 1) cp["divider"] = true;  // a hairline between the stats (S3); k counts from 1 here
-      }
-    }
-    return true;
-  }
-  if (t == "spark") {  // a Sparkline card (#200 K2): a Grid of the value (a Stat) and its last 24 hours (a Sparkline)
-    fw::dev::history::track(e);  // panel.history reads it with the others (core/history.cpp)
-    p["aspect"] = "row", p["gap"] = "group", p["cols"] = 2;
-    const int in = (int) nodes.size() - 1;
-    ArduinoJson::JsonObject st = nodes.add<ArduinoJson::JsonObject>();
-    st["c"] = "stat", st["in"] = in, st["slot"] = 0;
-    ArduinoJson::JsonObject sp_ = st["p"].to<ArduinoJson::JsonObject>();
-    if (label.empty()) bind(sp_, "label", e, "name"); else sp_["label"] = label;
-    bind(sp_, "value", e, "state");
-    sp_["size"] = "headline", sp_["align"] = "start";
-    ArduinoJson::JsonObject ln = nodes.add<ArduinoJson::JsonObject>();
-    ln["c"] = "sparkline", ln["in"] = in, ln["slot"] = 1;
-    ArduinoJson::JsonObject lp = ln["p"].to<ArduinoJson::JsonObject>();
-    ArduinoJson::JsonObject vb = lp["values"].to<ArduinoJson::JsonObject>();
-    vb["e"] = "panel.history", vb["a"] = e;
-    lp["colour"] = "accent", lp["dot"] = true;
-    lp["width"] = size == "3xhalf" ? 200 : 120;  // inside its half of the cell, the end dot too
-    return true;
-  }
   const std::string dom = e.substr(0, e.find('.'));
   // the label: the card's, else the entity's friendly name; a page card: the page's name
   std::string pid = cd["page"] | "", kind;
@@ -263,7 +215,6 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
   for (Var pg : pages.as<ArduinoJson::JsonArrayConst>())
     if (pid == (pg["id"] | "")) target = pg;
   if (t == "page") { p["label"] = label.empty() ? page_name(target) : label; kind = target["kind"] | ""; }
-  else if (t == "header" || t == "mode") {}  // a header's label is its title (below); a mode card shows its choices only
   else if (label.empty()) bind(p, "label", e, "name");
   else p["label"] = label;
   const std::string comp_s = comp;
@@ -274,29 +225,7 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       : (edom == "light" || edom == "switch" || edom == "fan" || edom == "input_boolean" || edom == "automation") ? "light"
       : edom == "cover" ? "cover" : (edom == "sensor" || edom == "binary_sensor") ? "sensor"
       : (edom == "script" || edom == "scene" || edom == "button") ? "action" : "other";
-  if (comp_s == "section_header") {  // a Header card (#200): the title that groups the cards under it, no tap
-    p["title"] = label.empty() ? std::string("Section") : label;
-    p["badge"] = false, p["right"] = "none", p["size"] = "label";
-  } else if (comp_s == "slider_row") {  // a Slider strip (#200): the light's brightness, dragged to set it
-    p["look"] = "bar";  // L2: the whole strip is the slider, filling as the light gets brighter
-    ArduinoJson::JsonObject v = p["value"].to<ArduinoJson::JsonObject>();
-    v["e"] = e, v["a"] = "brightness", v["fmt"] = "pct";
-    ArduinoJson::JsonObject tx = p["text"].to<ArduinoJson::JsonObject>();
-    tx["e"] = e, tx["a"] = "brightness", tx["fmt"] = "pct";  // the number (slider_row shows it)
-    ArduinoJson::JsonObject on = n["on"].to<ArduinoJson::JsonObject>();
-    for (const char *ev : {"change", "input"}) { on[ev]["do"] = "light.brightness"; on[ev]["e"] = e; }
-  } else if (comp_s == "segmented") {  // a mode card (#200 P3): the select's options, the chosen one = its state; a tap picks
-    ArduinoJson::JsonObject o = p["options"].to<ArduinoJson::JsonObject>();
-    o["e"] = e, o["a"] = "options";
-    bind(p, "selected", e, "state");
-    p["width"] = "fill";
-    ArduinoJson::JsonObject on = n["on"]["change"].to<ArduinoJson::JsonObject>();
-    on["do"] = "entity.option", on["e"] = e;
-  } else if (comp_s == "stat") {  // a Stat card (#200): the entity's state as the big value, its name as the label
-    bind(p, "value", e, "state");
-    p["align"] = "start";
-    p["size"] = size == "2xhalf" ? "value" : "headline";  // the big number: as big as the width takes (one column: headline)
-  } else if (comp_s == "readout") {  // a State readout (half only): no box, no tap; the state, the accent while on, offline = mute
+  if (comp_s == "readout") {  // a State readout (half only): no box, no tap; the state, the accent while on, offline = mute
     sensor_icon(p, e);
     bind(p, "state", e, "state");
     ArduinoJson::JsonObject tone = p["tone"].to<ArduinoJson::JsonObject>();
