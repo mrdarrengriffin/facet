@@ -193,5 +193,16 @@ export default {
         t.eq(A, B, 'the half-hours and the cost after partial reads = a full read of the same data');
       } finally { Date.now = realNow, ahead = 0; t.ha.wsx = null; t.b.m._fw_ha_connected?.(0); }
     } },
+    { name: 'more rows than the screen holds (the cheapest line, an event): the hero label starts below the header, the body scrolls to the More row (#221)', async run(t) {
+      await t.device({ ...SAMPLE, pages: [SAMPLE.pages[0], { id: 'energy', kind: 'energy', params: { source: 'fixtures' } }] }); t.show('energy'); t.wait(300);
+      t.ok(t.objs().some((o) => /^cheapest/i.test(String(o.text || ''))), 'the cheapest line is there (the taller shape)');
+      const lab = t.objs().find((o) => /^today so far$/i.test(String(o.text || ''))), body = t.b.scrolls().find((s) => s.b > 0 && s.dir !== 4 && s.w >= t.objs()[0].w * 0.8);
+      t.ok(body, `the centred body scrolls when too tall: ${JSON.stringify(t.b.scrolls())}`);
+      if (body && lab) t.ok(lab.y >= body.y && body.sy === 0, `the label top ${lab.y} at or below the body top ${body.y}, not scrolled (${body.sy})`);
+      for (let i = 0; i < 3; i++) t.drag(null, { from: [body.x + body.w / 2, body.y + body.h - 20], by: [0, -body.h / 2] });
+      t.wait(900);
+      const more = t.objs().find((o) => /^last 7 days$/i.test(String(o.text || '')));
+      t.ok(more && more.y + more.h <= body.y + body.h, `the More row scrolls into view (${JSON.stringify(more && { y: more.y, h: more.h })})`);
+    } },
   ],
 };

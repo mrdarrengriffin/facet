@@ -190,7 +190,7 @@ void break_stale(bool on);  // break-it (tests only): a live theme switch repain
 #endif  // the canvas colour under a contract page in the live theme (the stage / screen bg)
 // Screen > Page > Header slot + Body. head = inset top/sides, lay::top tall (the Header
 // component sits at its content origin); body = the rest, inset padding INSIDE it. body: "list" (scrolling column,
-// rows touch), "cards" (scrolling wrap, gutter both ways), "center" (one node centred, no scroll), "page" (scrolling
+// rows touch), "cards" (scrolling wrap, gutter both ways), "center" (one node centred, no scroll; taller than the body: top-aligned, scrolls), "page" (scrolling
 // column, children centred: a foundation page).
 // `page` (an object the caller sized) BECOMES the Page: its children are then head + body, in that order.
 struct Page { lv_obj_t *page, *head, *body; };

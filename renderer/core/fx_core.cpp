@@ -2183,8 +2183,33 @@ Page page(lv_obj_t *pg, const char *kind) {
   lv_obj_add_event_cb(p.body, [](lv_event_t *e) { page_bodies().erase((lv_obj_t *) lv_event_get_current_target(e)); }, LV_EVENT_DELETE, nullptr);
   use(p.body, "body-move");
   use(pg, "page-move");
-  if (!strcmp(kind, "center")) lv_obj_remove_flag(p.body, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
-  else {
+  if (!strcmp(kind, "center")) {
+    // centred while it fits; taller than the body (more rows than the screen holds, #221), it top-aligns under the
+    // header and scrolls like a list: centred content that overflows ran under the header and off the bottom
+    lv_obj_remove_flag(p.body, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
+    lv_obj_set_scroll_dir(p.body, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(p.body, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_add_event_cb(p.body, [](lv_event_t *e) {
+      lv_obj_t *b = (lv_obj_t *) lv_event_get_current_target(e);
+      int32_t need = 0, n = 0;
+      for (uint32_t i = 0; i < lv_obj_get_child_count(b); i++) {
+        lv_obj_t *c = lv_obj_get_child(b, i);
+        if (lv_obj_has_flag_any(c, (lv_obj_flag_t) (LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_FLOATING))) continue;
+        need += lv_obj_get_height(c) + lv_obj_get_style_margin_top(c, LV_PART_MAIN) + lv_obj_get_style_margin_bottom(c, LV_PART_MAIN), n++;
+      }
+      if (n > 1) need += (n - 1) * lv_obj_get_style_pad_row(b, LV_PART_MAIN);
+      const bool tall = need > lv_obj_get_content_height(b), was = lv_obj_has_flag(b, LV_OBJ_FLAG_SCROLLABLE);
+      if (tall == was) return;
+      if (tall) {
+        lv_obj_set_style_flex_main_place(b, LV_FLEX_ALIGN_START, 0);
+        lv_obj_add_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // a drag on plain text scrolls too
+      } else {
+        lv_obj_remove_local_style_prop(b, LV_STYLE_FLEX_MAIN_PLACE, 0);
+        lv_obj_scroll_to_y(b, 0, LV_ANIM_OFF);
+        lv_obj_remove_flag(b, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));
+      }
+    }, LV_EVENT_LAYOUT_CHANGED, nullptr);
+  } else {
     lv_obj_add_flag(p.body, (lv_obj_flag_t) (LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE));  // a drag on plain text scrolls too
     lv_obj_set_scroll_dir(p.body, LV_DIR_VER);
     lv_obj_set_scrollbar_mode(p.body, LV_SCROLLBAR_MODE_OFF);

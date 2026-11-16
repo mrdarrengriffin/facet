@@ -15,7 +15,7 @@
 //                                                          Home). Back is the renderer's: every screen
 //                                                          but the device's root has it; "back" is accepted, ignored
 //               "layout": "list" | "center" | "cards",    list = one scrolling column (rows touch), center = one node
-//                                                          centred in the content box, cards = the card grid
+//                                                          centred in the content box (taller than it: top-aligned, scrolls), cards = the card grid
 //               "nodes": [node...]}
 // Node         {"c": "<component id>", "p": {prop: value | bind}, "on": {event: action}, "pending": {prop: [on, off]},
 //               "in"?: k, "slot"?: n, "each"?: "<param>", "sample"?: [{prop: value}...], "show"?: bind}
