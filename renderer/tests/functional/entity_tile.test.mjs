@@ -168,6 +168,18 @@ export default {
       }
       t.has(status(t, 'Outside temp') || [], /^unavailable$/i, 'a sensor at unknown is still Unavailable');
     } },
+    { name: 'Home: a 1x1 Media card says what the player is doing, not Off (#182): the title while playing or paused, Playing without one, Off', async run(t) {
+      t.ha.s['media_player.kitchen'] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Halo' };
+      await t.device({ v: 2, rev: 9, start: 'p', pages: [{ id: 'p', kind: 'home', name: 'Home', cards: [{ t: 'media', e: 'media_player.kitchen', size: '1x1' }, { t: 'media', e: 'media_player.kitchen', size: 'half' }] }] });
+      t.wait(600);
+      t.has(status(t, 'Kitchen') || [], /^Halo$/, 'playing: the title');
+      t.ha.set('media_player.kitchen', 'paused', { media_title: 'Halo' }); t.wait(300);
+      t.has(status(t, 'Kitchen') || [], /^Halo$/, 'paused: the title');
+      t.ha.set('media_player.kitchen', 'playing', { media_title: '' }); t.wait(300);
+      t.has(status(t, 'Kitchen') || [], /^Playing$/, 'no title: Playing');
+      t.ha.set('media_player.kitchen', 'off', {}); t.wait(300);
+      t.has(status(t, 'Kitchen') || [], /^Off$/, 'off');
+    } },
     { name: 'Home: HA disconnect + reconnect: every light line comes back', async run(t) {
       await t.device('house');
       const before = Object.keys(HOME_LIGHTS).map((l) => (status(t, l) || []).join());

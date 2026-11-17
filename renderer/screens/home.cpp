@@ -267,6 +267,10 @@ bool card_node(Var cd, Var pages, int slot, ArduinoJson::JsonArray nodes) {
       on["map"]["open"] = "on";
       on["map"]["opening"] = "on";
       on["else"] = "off";
+    } else if (vt == "media") {  // a player (#182): what it is doing and the track, lit while it plays
+      p["icon"] = "speaker";
+      bind(p, "status", e, "media");
+      bind(p, "on", e, "playing");
     } else {
       p["icon"] = dom == "light" ? "bulb" : dom == "automation" ? "auto" : "power";
       bind(p, "status", e, "level");

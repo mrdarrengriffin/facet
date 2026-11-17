@@ -286,6 +286,15 @@ inline void bind_raw(ArduinoJson::JsonVariantConst b, ArduinoJson::JsonObject ou
   const bool on = st && *st == "on";
   if (fmt == "on") { use(""); out[key] = on; return; }
   if (fmt == "playing") { use(""); out[key] = st && *st == "playing"; return; }
+  if (fmt == "media") {  // a player as one short line (the small Media card, #182): playing / paused = the track's title (no title: Playing /
+    // Paused; the tile is lit while it plays), else its state
+    use(""); use("media_title");
+    if (st && (*st == "playing" || *st == "paused")) {
+      const std::string *ti = get(e, "media_title");
+      out[key] = ti && !ti->empty() ? *ti : std::string(*st == "playing" ? "Playing" : "Paused");
+    } else out[key] = words(e);
+    return;
+  }
   if (fmt == "pct") { use(a.empty() ? "brightness" : a); out[key] = pct(e, a.empty() ? "brightness" : a.c_str()); return; }
   if (fmt == "avail") {
     use("");
