@@ -86,7 +86,7 @@ needs [ESPHome](https://esphome.io). The first run does `npm ci` for you.
 |---|---|---|---|
 | `./facet build wasm [1x\|1.5x]` | the renderer as WebAssembly (1.5x = the 720 panel, 1x = the 480 panel; both by default) | while you work | ~35 s a density |
 | `./facet build firmware <board>` | a panel's firmware (`waveshare-p4-86`, `guition-4848s040`): the factory and OTA images | to try a change on a panel | ~3 min, seconds when nothing changed |
-| `./facet check quick [--ids a,b]` | build 1.5x, then the quick checks (tokens, contrast, contract, host tests, the rules) and the functional tests of the components or screens you name | before every commit | 10 s - 2 min |
+| `./facet check quick [--ids a,b]` | build 1.5x, then the quick checks (tokens, contrast, contract, host tests, the rules) and the functional tests of the components or screens you name | before every commit | ~10 s with `--ids`, ~3.5 min without |
 | `./facet check full` | both builds, then every check at both densities: every rule (grid, clipping, contrast, visual, behaviour), every functional test, the image decoders, the editor's browser tests | CI on every push and pull request; before a release | ~10 min |
 | `./facet check nightly` | full, then the slow ones: memory errors (ASan), theme fuzzing, frame times, the bench | overnight | ~30 min |
 

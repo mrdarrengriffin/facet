@@ -114,7 +114,7 @@ npm run dev                          # or: npm run build`} />
     <tbody>
       <tr><td><code>./facet build wasm [1x|1.5x]</code></td><td>The renderer as WebAssembly (1.5x = the 720 panel, 1x = the 480 panel; both by default)</td><td>While you work</td><td>~35 s a density</td></tr>
       <tr><td><code>./facet build firmware &lt;board&gt;</code></td><td>A panel's firmware (<code>waveshare-p4-86</code>, <code>guition-4848s040</code>): the factory and OTA images</td><td>To try a change on a panel</td><td>~3 min; seconds when nothing changed</td></tr>
-      <tr><td><code>./facet check quick [--ids a,b]</code></td><td>Build 1.5x, then the quick checks (tokens, contrast, contract, host tests, the rules) and the functional tests of what you name</td><td>Before every commit</td><td>10 s to 2 min</td></tr>
+      <tr><td><code>./facet check quick [--ids a,b]</code></td><td>Build 1.5x, then the quick checks (tokens, contrast, contract, host tests, the rules) and the functional tests of what you name</td><td>Before every commit</td><td>~10 s with <code>--ids</code>; ~3.5 min without</td></tr>
       <tr><td><code>./facet check full</code></td><td>Both builds, then every check at both densities: every rule, every functional test, the image decoders, the editor's browser tests</td><td>CI on every push and pull request; before a release</td><td>~10 min</td></tr>
       <tr><td><code>./facet check nightly</code></td><td>Full, then the slow ones: memory errors (ASan), theme fuzzing, frame times, the bench</td><td>Overnight</td><td>~30 min</td></tr>
     </tbody>

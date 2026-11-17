@@ -59,6 +59,7 @@ if has 1.5x; then
 check features node tools/features.mjs check
 check templates node ../boards/templates.mjs --check  # the issue templates list every board
 check json bash -c 'for f in specs/*.json tokens/*.json features.json; do node -e "JSON.parse(require(\"fs\").readFileSync(process.argv[1], \"utf8\"))" "$f" || { echo "bad JSON: $f"; exit 1; }; done'
+check install-flash node ../site/scripts/test-install-flash.mjs  # the docs installer's flash step (no hardware)
 check contrast node tools/contrast.mjs --summary
 check contract-lint node tools/contract_lint.mjs --summary
 check http-status node --test tools/http_status.test.mjs
