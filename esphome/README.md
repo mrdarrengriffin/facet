@@ -17,9 +17,13 @@ an ESPHome component, plus each board's hardware.
 ## Build
 
 ```bash
-cd renderer/tools && npm ci && cd ../..
-esphome/build.sh waveshare-p4-86            # or guition-4848s040; add `prepare` to only generate
+./facet build firmware waveshare-p4-86      # or guition-4848s040
 ```
+
+Needs Node, Python 3, [emsdk](https://emscripten.org) and [ESPHome](https://esphome.io) (`pip install esphome`).
+`./facet` runs `npm ci` (renderer/tools, workbench) on a fresh clone and builds the WASM renderer at the board's
+scale (the panel serves its editor from it) when there is none, then `esphome/build.sh <board>`, and lists the
+factory and OTA images at the end. `esphome/build.sh <board> prepare` only generates.
 
 `build.sh` generates `gen/<board>/facet_wb` (`firmware/bundle.mjs`), `gen/settings.yaml` (`firmware/settings_yaml.mjs`)
 and, for a board with a speaker, the sound bank (`firmware/sound_bank.mjs`, rendered by the Facet synth, `renderer/tools/synth.ts`, in
