@@ -15,7 +15,10 @@ set -uo pipefail
 ROOT=$(cd "$(dirname "$0")" && pwd)
 R=$ROOT/renderer
 [ -f "$ROOT/local.env" ] && . "$ROOT/local.env"
-export FW_OUT=${FW_OUT:-$R/out} FW_CACHE=${FW_CACHE:-$R/.cache}
+# build.sh and check.sh apply their own defaults (renderer/out, renderer/.cache): passing a spelled-out default
+# changed the compiler's command lines and cost the CI cache half its hits
+OUT=${FW_OUT:-$R/out} CACHE=${FW_CACHE:-$R/.cache}
+[ -n "${FW_OUT:-}" ] && export FW_OUT; [ -n "${FW_CACHE:-}" ] && export FW_CACHE
 WRAP=${FACET_BUILD_WRAP:-}
 
 usage() { sed -n 2,12p "$0" | sed 's/^# \{0,1\}//'; }
@@ -35,7 +38,8 @@ step() {  # step <name> <log> <cmd...>: one line, the error lines on failure
 }
 build_wasm() {  # build_wasm <log dir> [den...]
   local log=$1; shift
-  step "build ${*:-1.5x 1x}" "$log/build.log" bash -c "cd '$R' && $WRAP ./build.sh $*"
+  # from the repo root, as CI always ran it: ccache keys on paths relative to where the compiler starts
+  step "build ${*:-1.5x 1x}" "$log/build.log" bash -c "cd '$ROOT' && $WRAP renderer/build.sh $*"
 }
 
 cmd=${1:-help}; shift || true
@@ -43,7 +47,7 @@ case "$cmd" in
   help|-h|--help) usage ;;
   build)
     what=${1:-}; shift || true
-    LOG=$FW_CACHE/runs/$(date +%Y%m%d-%H%M%S)-build; mkdir -p "$LOG"
+    LOG=$CACHE/runs/$(date +%Y%m%d-%H%M%S)-build; mkdir -p "$LOG"
     deps renderer/tools; [ "$what" = firmware ] && deps workbench
     case "$what" in
       wasm) build_wasm "$LOG" "$@" || { echo "BUILD: FAILED (logs $LOG)"; exit 1; } ;;
@@ -53,13 +57,13 @@ case "$cmd" in
         [ -f "$ROOT/boards/$board.json" ] || { echo "no board $board: one of $boards"; exit 2; }
         command -v "${ESPHOME:-esphome}" >/dev/null || { echo "ESPHome is not installed (pip install esphome, or set ESPHOME)"; exit 2; }
         scale=$(node -p "require('$ROOT/boards/$board.json').scale")
-        [ -f "$FW_OUT/$scale/fw.wasm" ] || build_wasm "$LOG" "$scale" || { echo "BUILD: FAILED (logs $LOG)"; exit 1; }
+        [ -f "$OUT/$scale/fw.wasm" ] || build_wasm "$LOG" "$scale" || { echo "BUILD: FAILED (logs $LOG)"; exit 1; }
         step "firmware $board" "$LOG/firmware.log" "$ROOT/esphome/build.sh" "$board" || { echo "BUILD: FAILED (logs $LOG)"; exit 1; }
         echo "images:"; find "${ESPHOME_BUILD_ROOT:-$ROOT/esphome/build}" -path '*/build/*' -name '*.bin' -newer "$LOG" 2>/dev/null | grep -E 'firmware\.(factory|ota)\.bin$|/firmware\.bin$' | sed 's/^/  /'
         echo "BUILD: done ($((SECONDS - t_all))s)"; exit 0 ;;
       *) usage; exit 2 ;;
     esac
-    echo "BUILD: done ($((SECONDS - t_all))s) -> $FW_OUT" ;;
+    echo "BUILD: done ($((SECONDS - t_all))s) -> $OUT" ;;
   check)
     level=${1:-}; shift || true
     nobuild="" pass=() den=""
@@ -67,12 +71,12 @@ case "$cmd" in
     case "$level" in quick) tier=fast dens=1.5x ;; full) tier=gate dens=$den ;; nightly) tier=gate dens="" ;; *) usage; exit 2 ;; esac
     [ -n "$den" ] && { [ "$level" = full ] || { echo "--den is for full (one density: CI's two halves)"; exit 2; }; pass+=(--den "$den"); }
     [ "$level" = nightly ] && [ ${#pass[@]} -gt 0 ] && { echo "nightly checks everything (no --ids)"; exit 2; }
-    LOG=$FW_CACHE/runs/$(date +%Y%m%d-%H%M%S)-$level; mkdir -p "$LOG"; export CHECK_LOG=$LOG
+    LOG=$CACHE/runs/$(date +%Y%m%d-%H%M%S)-$level; mkdir -p "$LOG"; export CHECK_LOG=$LOG
     deps renderer/tools
     rc=0
     if [ -z "$nobuild" ]; then build_wasm "$LOG" $dens || { echo "CHECK $level: FAILED at the build ($((SECONDS - t_all))s, logs $LOG)"; exit 1; }; fi
     "$R/check.sh" "$tier" "${pass[@]}" | grep -v '^CHECK '; [ "${PIPESTATUS[0]}" = 0 ] || rc=1
-    if [ "$level" = nightly ]; then (cd "$R" && $WRAP ./check.sh nightly) | grep -v '^CHECK '; [ "${PIPESTATUS[0]}" = 0 ] || rc=1; fi
+    if [ "$level" = nightly ]; then (cd "$ROOT" && $WRAP renderer/check.sh nightly) | grep -v '^CHECK '; [ "${PIPESTATUS[0]}" = 0 ] || rc=1; fi
     [ $rc = 0 ] && echo "CHECK $level: all green ($((SECONDS - t_all))s, logs $LOG)" || echo "CHECK $level: FAILED ($((SECONDS - t_all))s, logs $LOG)"
     exit $rc ;;
   *) usage; exit 2 ;;
