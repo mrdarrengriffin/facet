@@ -166,7 +166,7 @@ export default {
         t.ok(!(status(t, f) || []).some((s) => /unavailable/i.test(s)), `${f}: not Unavailable (${JSON.stringify(status(t, f))})`);
         t.tap(name(f)); t.call({ service: svc, entity: e }, `${f}: tap`);
       }
-      t.has(status(t, 'Outside temp') || [], /^unavailable$/i, 'a sensor at unknown is still Unavailable');
+      t.has(status(t, 'Outside temp') || [], /^unavaila/i, 'a sensor at unknown is still Unavailable (cut to fit at 1x)');
     } },
     { name: 'Home: a 1x1 Media card says what the player is doing, not Off (#182): the title while playing or paused, Playing without one, Off', async run(t) {
       t.ha.s['media_player.kitchen'] = { '': 'playing', friendly_name: 'Kitchen', media_title: 'Halo' };
