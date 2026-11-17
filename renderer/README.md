@@ -60,7 +60,8 @@ its time); the full output of every step goes to `$FW_CACHE/checks/<time>-<tier>
 | `gate` | the same checks, every rule at both densities (visual at 1.5x), behaviour and every functional test. `--den` runs one density's half; CI runs the halves as two jobs |
 | `nightly` | ASan at 1.5x (and 1x on Sundays), the nightly functional suites, the theme parser fuzz, the lag proxy and the bench |
 
-Functional tests are reported but do not fail a tier yet (WARN); a failing rule fails it.
+A failed functional test fails the tier, like a failed rule. From the repo root, `./facet check quick|full|nightly`
+builds what the tier needs first (CONTRIBUTING.md "Building & testing").
 
 Single tools, when you want one thing:
 

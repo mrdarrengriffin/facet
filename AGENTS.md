@@ -5,10 +5,13 @@ One C++/LVGL renderer draws every screen, built to WebAssembly (the workbench, t
 
 ## Build and run
 
-- Needs: Node 24, Python 3 with venv, Emscripten 6.0.13 (`em++` on PATH or `$EMSDK`). Once: `cd renderer/tools && npm ci`.
-- `renderer/build.sh` builds both densities; `renderer/build.sh 1.5x` the 720 px panels, `1x` the 480 px panel. It only builds, never checks.
+One command at the repo root, `./facet` (`./facet help`; every command, when it runs and how long it takes:
+CONTRIBUTING.md "Building & testing"). Needs Node 24, Python 3 with venv, Emscripten 6.0.13; firmware also ESPHome.
+
+- `./facet check quick --ids <ids>` before every commit (build 1.5x + the quick checks + those ids' tests).
+- `./facet check full` = what CI runs (both builds + every check); `./facet check nightly` = full + ASan and fuzz.
+- `./facet build wasm [1x|1.5x]`; `./facet build firmware <board>` (the factory and OTA images).
 - `node renderer/watch.mjs` rebuilds 1.5x on every save. 1x builds only after a minute of quiet (or `kill -USR1 <pid>`).
-- `renderer/check.sh fast --ids <ids>` before every commit; `gate` is what CI runs (budget 300 s on a built tree); `nightly` is ASan and fuzz. Every tier checks the build that is there: build first.
 - Docs site: `FW_FEATURES=docs renderer/build.sh`, then `cd site && npm ci && npm run build`.
 - Output paths come from `local.env` at the repo root (untracked; `FW_OUT`, `FW_CACHE`). Default `renderer/out`.
 
@@ -16,12 +19,11 @@ One C++/LVGL renderer draws every screen, built to WebAssembly (the workbench, t
 
 Run all of these on the current source. Each must exit 0 and print no WARN line:
 
-1. `renderer/build.sh`
-2. `renderer/check.sh gate`. A failed functional test fails the gate. Read each FAIL and WARN line (the log path is on the line).
+1. `./facet check full` (both builds, then every check). A failed functional test fails it. Read each FAIL and WARN line (the log path is on the line).
    The gate's workbench step tests the workbench at `WORKBENCH_URL` (default `http://localhost:4322`), which serves the checkout that started it. Start it from this tree first (`workbench/run.sh`), or the step fails. CI skips it (`CI` set).
-3. If anything the site shows changed (`site/`, a component's meta or header comment, `renderer/specs/`, tokens):
+2. If anything the site shows changed (`site/`, a component's meta or header comment, `renderer/specs/`, tokens):
    `FW_FEATURES=docs renderer/build.sh && (cd site && npm run build)`
-4. `git status`: only your change. Nothing `.new` in `renderer/tests/golden/`, no build output, no stray files.
+3. `git status`: only your change. Nothing `.new` in `renderer/tests/golden/`, no build output, no stray files.
 
 Then follow `.github/pull_request_template.md`: one thing per pull request, screenshots at 720 and 480 for anything visible.
 

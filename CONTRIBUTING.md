@@ -76,19 +76,28 @@ cd site && npm ci
 npm run dev                         # or: npm run build
 ```
 
-### Work on the renderer
+### Building & testing
 
-The renderer builds to WebAssembly with Emscripten. For now it borrows LVGL, `lv_conf.h` and the fonts from an
-ESPHome panel firmware build next to it (vendoring them is on the list); `local.env` at the repo root says where they
-are. The variables are in [renderer/README.md, "Paths"](renderer/README.md#paths-localenv-untracked).
+Everything goes through one command at the repo root, `./facet` (`./facet help` lists it). It needs Node 24,
+Python 3 and [emsdk](https://emscripten.org) (LVGL, the fonts and `lv_conf.h` are in the repo); a firmware build also
+needs [ESPHome](https://esphome.io). The first run does `npm ci` for you.
 
-```sh
-cd renderer/tools && npm install && cd ../..
-renderer/build.sh 1.5x              # one build (1.5x = the 720 panel, 1x = the 480 panel)
-node renderer/watch.mjs             # rebuild on save while you work
-```
+| Command | What it does | When | Time |
+|---|---|---|---|
+| `./facet build wasm [1x\|1.5x]` | the renderer as WebAssembly (1.5x = the 720 panel, 1x = the 480 panel; both by default) | while you work | ~35 s a density |
+| `./facet build firmware <board>` | a panel's firmware (`waveshare-p4-86`, `guition-4848s040`): the factory and OTA images | to try a change on a panel | ~3 min, seconds when nothing changed |
+| `./facet check quick [--ids a,b]` | build 1.5x, then the quick checks (tokens, contrast, contract, host tests, the rules) and the functional tests of the components or screens you name | before every commit | 10 s - 2 min |
+| `./facet check full` | both builds, then every check at both densities: every rule (grid, clipping, contrast, visual, behaviour), every functional test, the image decoders, the editor's browser tests | CI on every push and pull request; before a release | ~10 min |
+| `./facet check nightly` | full, then the slow ones: memory errors (ASan), theme fuzzing, frame times, the bench | overnight | ~30 min |
 
-If the build setup gets in your way, open an issue: getting a second person building Facet is worth fixing.
+Each step prints one PASS / FAIL line with its time; a failure shows its error lines and the log file. Add
+`--no-build` to check the build that is already there. While you work, `node renderer/watch.mjs` rebuilds on save.
+Where builds and caches go can be set in `local.env` at the repo root ([renderer/README.md, "Paths"](renderer/README.md#paths-localenv-untracked)).
+
+The house rules, in short: every value comes from a token, sizes sit on the 4 px grid, everything works at 720 and
+480 in dark and light, and screens are made of real components (a new arrangement is a new layout component). The
+checks hold them; the [renderer README](renderer/README.md) has the detail. If the build setup gets in your way, open
+an issue: getting a second person building Facet is worth fixing.
 
 ### Adding a data source (adapter)
 
@@ -98,24 +107,6 @@ C51b): a row in `renderer/sources/sources.json`, the source in the screen's spec
 branch in the feed's `renderer/core/<feed>_source.cpp` that maps the source onto the model, and a functional test on
 the fake Home Assistant or fake web. No screen changes. The steps, a worked example, each screen's model and the pull
 request checklist: [Writing an adapter](https://mrdarrengriffin.github.io/facet/inside/adapters/).
-
-### Checks before a pull request
-
-Facet's rules are checked by tools, not by memory. Run the ones your change touches:
-
-```sh
-node renderer/tools/features.mjs check     # every source in one feature (also runs in CI)
-renderer/build.sh && renderer/check.sh gate       # both builds, then every check: 4 px grid, clipping, symmetry, animation paths, contrast
-node renderer/tools/contrast.mjs --summary # every colour pair, dark and light: 0 failures
-node renderer/tools/functional.mjs --rules --rule spec-store  # screen specs
-node renderer/tools/functional.mjs --rules --rule behaviour  # taps, drags, scrolling, sounds, the update path
-node renderer/tools/functional.mjs --rules --rule visual --den 1.5x  # what is drawn: blank, one colour, motion, Astro references
-renderer/tools/asan.sh                     # memory errors, before anything goes on a panel
-```
-
-The house rules, in short: every value comes from a token, sizes sit on the 4 px grid, everything works at 720 and
-480 in dark and light, and screens are made of real components (a new arrangement is a new layout component). The
-[renderer README](renderer/README.md) has the detail.
 
 ### Pull requests
 

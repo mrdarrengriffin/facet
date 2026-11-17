@@ -13,9 +13,8 @@ const headings: Heading[] = [
   { depth: 2, slug: 'docs', text: 'Improve the docs' },
   { depth: 2, slug: 'code', text: 'Contribute code' },
   { depth: 3, slug: 'site', text: 'The docs site' },
-  { depth: 3, slug: 'renderer', text: 'The renderer' },
+  { depth: 3, slug: 'building', text: 'Building & testing' },
   { depth: 3, slug: 'adapter', text: 'Adding a data source' },
-  { depth: 3, slug: 'checks', text: 'Checks' },
   { depth: 3, slug: 'pull-requests', text: 'Pull requests' },
   { depth: 2, slug: 'ideas', text: 'Share an idea' },
   { depth: 2, slug: 'kind', text: 'Be kind' },
@@ -99,20 +98,34 @@ const headings: Heading[] = [
   </p>
 
   <h3 id="site">The docs site</h3>
-  <p>The site is built around the docs flavour of the WASM renderer, so it needs the renderer setup below. A text-only fix needs nothing: use the page's <strong>Edit this page on GitHub</strong> link.</p>
-  <CodeBlock lang="bash" label="Shell" code={`FW_FEATURES=docs renderer/build.sh   # the docs flavour of the WASM build (the renderer setup below)
+  <p>The site is built around the docs flavour of the WASM renderer, so it needs the setup under Building &amp; testing below. A text-only fix needs nothing: use the page's <strong>Edit this page on GitHub</strong> link.</p>
+  <CodeBlock lang="bash" label="Shell" code={`FW_FEATURES=docs renderer/build.sh   # the docs flavour of the WASM build
 cd site && npm ci
 npm run dev                          # or: npm run build`} />
 
-  <h3 id="renderer">The renderer</h3>
+  <h3 id="building">Building &amp; testing</h3>
   <p>
-    The renderer builds to WebAssembly with Emscripten 6.0.13 and needs Node 24. Everything else is in the repository:
-    LVGL 9.5.0 and ArduinoJson in <code>third_party/</code>, <code>lv_conf.h</code> and the fonts.
+    Everything goes through one command at the repo root, <code>./facet</code> (<code>./facet help</code> lists it). It
+    needs Node 24, Python 3 and Emscripten 6.0.13 (LVGL, ArduinoJson, <code>lv_conf.h</code> and the fonts are in the
+    repository); a firmware build also needs ESPHome. The first run does <code>npm ci</code> for you.
   </p>
-  <CodeBlock lang="bash" label="Shell" code={`cd renderer/tools && npm install && cd ../..
-renderer/build.sh 1.5x       # one build (1.5x = the 720 panel, 1x = the 480 panel)
-node renderer/watch.mjs      # rebuild on save while you work`} />
-  <p>If the build setup gets in your way, open an issue: getting a second person building Facet is worth fixing.</p>
+  <table>
+    <thead><tr><th>Command</th><th>What it does</th><th>When</th><th>Time</th></tr></thead>
+    <tbody>
+      <tr><td><code>./facet build wasm [1x|1.5x]</code></td><td>The renderer as WebAssembly (1.5x = the 720 panel, 1x = the 480 panel; both by default)</td><td>While you work</td><td>~35 s a density</td></tr>
+      <tr><td><code>./facet build firmware &lt;board&gt;</code></td><td>A panel's firmware (<code>waveshare-p4-86</code>, <code>guition-4848s040</code>): the factory and OTA images</td><td>To try a change on a panel</td><td>~3 min; seconds when nothing changed</td></tr>
+      <tr><td><code>./facet check quick [--ids a,b]</code></td><td>Build 1.5x, then the quick checks (tokens, contrast, contract, host tests, the rules) and the functional tests of what you name</td><td>Before every commit</td><td>10 s to 2 min</td></tr>
+      <tr><td><code>./facet check full</code></td><td>Both builds, then every check at both densities: every rule, every functional test, the image decoders, the editor's browser tests</td><td>CI on every push and pull request; before a release</td><td>~10 min</td></tr>
+      <tr><td><code>./facet check nightly</code></td><td>Full, then the slow ones: memory errors (ASan), theme fuzzing, frame times, the bench</td><td>Overnight</td><td>~30 min</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Each step prints one PASS / FAIL line with its time; a failure shows its error lines and the log file. Add
+    <code>--no-build</code> to check the build that is already there; <code>node renderer/watch.mjs</code> rebuilds on
+    save while you work. The house rules, in short: every value comes from a token, sizes sit on the 4 px grid,
+    everything works at 720 and 480 in dark and light, and screens are made of real components. The checks hold them.
+    If the build setup gets in your way, open an issue: getting a second person building Facet is worth fixing.
+  </p>
 
   <h3 id="adapter">Adding a data source (adapter)</h3>
   <p>
@@ -121,20 +134,6 @@ node renderer/watch.mjs      # rebuild on save while you work`} />
     <code>renderer/core/&lt;feed&gt;_source.cpp</code> that maps the source onto the screen's model, and a test on the
     fake Home Assistant or fake web. No screen changes. <a href={url('/inside/adapters/')}>Writing an adapter</a> has
     the steps, a worked example, each screen's model and the checklist.
-  </p>
-
-  <h3 id="checks">Checks</h3>
-  <p>Facet's rules are checked by tools, not by memory. Run the ones your change touches:</p>
-  <CodeBlock lang="bash" label="Shell" code={`node renderer/tools/features.mjs check      # every source in one feature (also runs in CI)
-renderer/build.sh && renderer/check.sh gate     # both builds, then every check: 4 px grid, clipping, symmetry, motion
-node renderer/tools/contrast.mjs --summary  # every colour pair, dark and light: 0 failures
-node renderer/tools/functional.mjs --rules --rule spec-store  # screen specs
-node renderer/tools/functional.mjs --rules --rule behaviour  # taps, drags, scrolling, sounds, updates
-node renderer/tools/functional.mjs --rules --rule visual --den 1.5x  # what is drawn: blank, one colour, motion, Astro references
-renderer/tools/asan.sh                      # memory errors`} />
-  <p>
-    The house rules, in short: every value comes from a token, sizes sit on the 4 px grid, everything works at 720 and
-    480 in dark and light, and screens are made of real <a href={url('/components/')}>components</a>.
   </p>
 
   <h3 id="pull-requests">Pull requests</h3>
