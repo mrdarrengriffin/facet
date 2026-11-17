@@ -62,7 +62,7 @@ export default {
       t.ha.answers = true;
       t.ha.s['weather.test_home'] = { '': 'sunny', friendly_name: 'Test home' };
       await t.device({ v: 2, rev: 9, start: 'h', pages: [
-        { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'weather', size: 'm' }] }, { id: 'weather', kind: 'weather', params: { source: 'ha_weather' } }] });
+        { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'weather', size: 'm' }] }, { id: 'weather', kind: 'weather', params: { source: 'ha' } }] });
       act(t, { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
       act(t, { do: 'nav.open', screen: 'ha_link' });
       t.hasNot(t.texts(), /^(Entity lists|Read now)$/, 'the screen: the link only, nothing to read by hand');
