@@ -605,7 +605,8 @@ function settings(box = $('ed-settings'), only?: string[]) {
     out.push(sec);
   }
   // the spec's typed params
-  const params = Object.entries(specOf(e.id)?.params ?? {}).map(([k, p]) => [k, typed(p)] as const).filter(([, p]) => p.type !== 'hidden');
+  // (the source is the radio list above when the catalogue has the screen: never a second Source setting, #226)
+  const params = Object.entries(specOf(e.id)?.params ?? {}).map(([k, p]) => [k, typed(p)] as const).filter(([k, p]) => p.type !== 'hidden' && !(cat && k === 'source'));
   const sec = h('section', 'set-sec');
   sec.append(h('span', 'cap', 'Settings'));
   if (!params.length) sec.append(h('p', 'empty', specOf(e.id) ? 'This screen has no settings yet.' : 'A built-in screen: nothing to set here.'));

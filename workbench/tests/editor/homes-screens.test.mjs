@@ -59,6 +59,15 @@ describe('Homes and screens in the overview', () => {
     assert.equal(await page.locator('[data-testid="home-remove"]').isDisabled(), true);
   });
 
+  it('Screen settings show a screen\'s Source once: the source list, never a second Source setting (#226)', async () => {
+    const cr = page.locator('#ed-crumbs button', { hasText: 'Panel' });
+    if (await cr.count()) { await cr.click(); await settle(page); }
+    await page.locator('[data-testid="screen-tile"]').filter({ hasText: /calendar/i }).first().locator('.shot').click(); await settle(page);
+    await page.getByRole('button', { name: 'Screen settings' }).click(); await settle(page);
+    const caps = await page.locator('.set-sec > .cap').allInnerTexts(), labels = await page.locator('.set-sec .lbl').allInnerTexts();
+    assert.equal(caps.filter((c) => /^source$/i.test(c.trim())).length, 1, `one Source list: ${caps.join(', ')}`);
+    assert.ok(!labels.some((l) => /^source$/i.test(l.trim())), `no Source setting under Settings: ${labels.join(', ')}`);
+  });
   it('Add screen from the gallery, then switch it off: the deck the panel gets follows', async () => {
     const s0 = (await fe(page, 'deck')).pages.map((p) => p.id);
     await page.locator('[data-testid="add-screen"]').click(); await settle(page);
