@@ -4,6 +4,7 @@
 #   ./facet build firmware <board>       a panel's firmware (boards/<board>.json; needs ESPHome): factory + OTA images
 #   ./facet check quick [--ids a,b]      before a commit: build 1.5x, then the quick checks (+ the given ids' tests)
 #   ./facet check full [--ids a,b]       CI and before a release: build both densities, then every check
+#                      [--den 1x|1.5x]   one density's half (CI runs the two at once)
 #   ./facet check nightly                overnight: full, then the slow checks (ASan, fuzz, lag, bench)
 #   ./facet check <level> --no-build     check the build that is already there
 #   ./facet help                         this list
@@ -18,8 +19,8 @@ export FW_OUT=${FW_OUT:-$R/out} FW_CACHE=${FW_CACHE:-$R/.cache}
 WRAP=${FACET_BUILD_WRAP:-}
 
 usage() { sed -n 2,12p "$0" | sed 's/^# \{0,1\}//'; }
-deps() {  # the node tools the builds and checks use, once per clone
-  for d in renderer/tools workbench; do
+deps() {  # deps <dir...>: the node tools a job uses, once per clone
+  for d in "$@"; do
     [ -d "$ROOT/$d/node_modules" ] || { echo "npm ci in $d (first run)"; (cd "$ROOT/$d" && npm ci --silent) || exit 1; }
   done
 }
@@ -43,7 +44,7 @@ case "$cmd" in
   build)
     what=${1:-}; shift || true
     LOG=$FW_CACHE/runs/$(date +%Y%m%d-%H%M%S)-build; mkdir -p "$LOG"
-    deps
+    deps renderer/tools; [ "$what" = firmware ] && deps workbench
     case "$what" in
       wasm) build_wasm "$LOG" "$@" || { echo "BUILD: FAILED (logs $LOG)"; exit 1; } ;;
       firmware)  # what esphome/build.sh needs first: the node tools, ESPHome, this tree's WASM build at the board's scale
@@ -61,12 +62,13 @@ case "$cmd" in
     echo "BUILD: done ($((SECONDS - t_all))s) -> $FW_OUT" ;;
   check)
     level=${1:-}; shift || true
-    nobuild="" pass=()
-    while [ $# -gt 0 ]; do case "$1" in --no-build) nobuild=1 ;; --ids) pass+=(--ids "$2"); shift ;; *) echo "unknown arg $1"; exit 2 ;; esac; shift; done
-    case "$level" in quick) tier=fast dens=1.5x ;; full) tier=gate dens="" ;; nightly) tier=gate dens="" ;; *) usage; exit 2 ;; esac
+    nobuild="" pass=() den=""
+    while [ $# -gt 0 ]; do case "$1" in --no-build) nobuild=1 ;; --ids) pass+=(--ids "$2"); shift ;; --den) den=$2; shift ;; *) echo "unknown arg $1"; exit 2 ;; esac; shift; done
+    case "$level" in quick) tier=fast dens=1.5x ;; full) tier=gate dens=$den ;; nightly) tier=gate dens="" ;; *) usage; exit 2 ;; esac
+    [ -n "$den" ] && { [ "$level" = full ] || { echo "--den is for full (one density: CI's two halves)"; exit 2; }; pass+=(--den "$den"); }
     [ "$level" = nightly ] && [ ${#pass[@]} -gt 0 ] && { echo "nightly checks everything (no --ids)"; exit 2; }
     LOG=$FW_CACHE/runs/$(date +%Y%m%d-%H%M%S)-$level; mkdir -p "$LOG"; export CHECK_LOG=$LOG
-    deps
+    deps renderer/tools
     rc=0
     if [ -z "$nobuild" ]; then build_wasm "$LOG" $dens || { echo "CHECK $level: FAILED at the build ($((SECONDS - t_all))s, logs $LOG)"; exit 1; }; fi
     "$R/check.sh" "$tier" "${pass[@]}" | grep -v '^CHECK '; [ "${PIPESTATUS[0]}" = 0 ] || rc=1

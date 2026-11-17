@@ -1,6 +1,6 @@
 name: CI
 
-# Every push to main and every pull request: the renderer is built from this repo alone (LVGL, ArduinoJson, lv_conf.h,
+# Every push to main and every pull request (./facet check full, the same command as a local run): the renderer is built from this repo alone (LVGL, ArduinoJson, lv_conf.h,
 # fonts vendored; renderer/README.md "What a machine needs") and the gate tier runs against it (renderer/check.sh gate:
 # every rule at both densities, the functional suites, goldens as raw 565). Two jobs, one per density (check.sh gate
 # --den), so the wall clock is the slower half. The renderer's own objects come back from ccache (the build's em++ runs
@@ -71,29 +71,14 @@ jobs:
             echo "EM_COMPILER_WRAPPER=" >> "$GITHUB_ENV"
             echo "IDF_CCACHE_ENABLE=0" >> "$GITHUB_ENV"
           fi
-      - run: npm ci
-        working-directory: renderer/tools
-      - name: Feature flags (every source in one feature, shown features complete, channels match the release tags)
+      - name: Release tags (the features check compares the channels with them)
         if: matrix.den == '1.5x'
-        run: |
-          git fetch --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*' '+refs/tags/firmware:refs/tags/firmware'
-          node renderer/tools/features.mjs check
-      - name: Issue templates list every board
-        if: matrix.den == '1.5x'
-        run: node boards/templates.mjs --check
-      - name: JSON sources parse
-        if: matrix.den == '1.5x'
-        run: |
-          for f in renderer/specs/*.json renderer/tokens/*.json renderer/features.json; do
-            node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))" "$f" || { echo "bad JSON: $f"; exit 1; }
-          done
-      - name: Build
-        run: renderer/build.sh ${{ matrix.den }} && (ccache -s || true)
-      - name: Gate
-        run: CHECK_LOG=renderer/.cache/checks/gate renderer/check.sh gate --den ${{ matrix.den }}
+        run: git fetch --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*' '+refs/tags/firmware:refs/tags/firmware'
+      - name: Build + check (./facet check full, this density's half)
+        run: ./facet check full --den ${{ matrix.den }} || rc=$?; ccache -s || true; exit ${rc:-0}
       - name: Gate logs
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: gate-logs-${{ matrix.den }}
-          path: renderer/.cache/checks/
+          path: renderer/.cache/runs/
