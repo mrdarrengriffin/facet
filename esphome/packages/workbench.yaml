@@ -24,6 +24,7 @@ esphome:
   build_flags:
     - -Wl,--wrap=vApplicationStackOverflowHook   # board/stack_guard.h
     - -Wl,--wrap=httpd_start                     # board/stacks.h
+    - -Wl,--wrap=lv_color_16_16_mix              # grey-safe RGB565 mixing (renderer/core/blend565.cpp, #39)
     # LVGL modules the WASM build has (panel lv_conf + packages/ui.yaml flags): ESPHome's lv_conf zeroes any module no
     # YAML widget declares unless a build flag names it, and this firmware declares no widgets
     - -DLV_USE_FLEX=1

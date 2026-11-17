@@ -5,6 +5,7 @@
 //   fw_test("stack", "")          -> JSON [{stack: [ids], builds, objects}] every mounted device (core/device.h state)
 //   fw_test("keep", "<n>|")       -> JSON [{page, bytes, objects, build_ms, stale, shown}] kept pages (n = set the cap first)
 //   fw_test("update", "state,installed,latest" | "install") -> "" : the host's firmware update (core/device.h update)
+//   fw_test("mix565", "c1,c2")   -> [256 RGB565 words]: LVGL's 16-bit mix of c1 over c2 at each opacity (core/blend565.cpp)
 //   fw_test("config", "")        -> the config export (core/device.h config_json; GET /fw/config)
 //   fw_test("update_password", "<pw>") -> "" : the panel's update password as a host tells it ("" = none; core/device.h)
 //   fw_test("setting", "id=value") -> "" applied / "same" / the error (dev::set from the host, e.g. sounds=false)
@@ -349,6 +350,11 @@ extern "C" EMSCRIPTEN_KEEPALIVE const char *fw_test(const char *cmd, const char 
     if (p2 == std::string::npos) return "state,installed,latest";
     fw::dev::update_set(a.substr(0, p1).c_str(), a.substr(p1 + 1, p2 - p1 - 1).c_str(), a.substr(p2 + 1).c_str());
     return "";
+  }
+  else if (c == "mix565") {  // "c1,c2" (RGB565 words): lv_color_16_16_mix(c1, c2, 0..255) as LVGL calls it (core/blend565.cpp)
+    const unsigned c1 = (unsigned) strtoul(a.c_str(), nullptr, 10), c2 = (unsigned) strtoul(a.substr(a.find(',') + 1).c_str(), nullptr, 10);
+    ArduinoJson::JsonArray r = d.to<ArduinoJson::JsonArray>();
+    for (int m = 0; m < 256; m++) r.add(lv_color_16_16_mix((uint16_t) c1, (uint16_t) c2, (uint8_t) m));
   }
   else if (c == "config") { fw::dev::config_json(out); return out.c_str(); }  // the config export (GET /fw/config)
   else if (c == "update_password") { fw::dev::update_password_set(a.c_str()); return ""; }

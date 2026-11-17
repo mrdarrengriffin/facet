@@ -35,5 +35,5 @@ for f in "$HERE"/core/*.cpp "$HERE"/foundations/*.cpp "$HERE"/components/*.cpp "
   o="$O/obj/$(basename "$(dirname "$f")")_$(basename "$f" .cpp).o"; OBJS="$OBJS $o"
   stale "$o" && { echo "cc $(basename "$f")"; g++ $FL $V -std=c++17 -I"$O/shim" -I"$HERE/core" -I"$AJ" -MMD -MF "$o.d" -c "$f" -o "$o"; }
 done
-g++ $SAN "$LV"/*.o $OBJS -o "$O/fw-asan" -lm
+g++ $SAN -Wl,--wrap=lv_color_16_16_mix "$LV"/*.o $OBJS -o "$O/fw-asan" -lm  # core/blend565.cpp, as build.sh
 exec "$O/fw-asan" "$@"
