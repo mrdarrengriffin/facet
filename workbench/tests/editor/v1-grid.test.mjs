@@ -45,6 +45,27 @@ for (const device of ['guition', 'waveshare'])
     before(async () => { E = await open(device); });
     after(async () => { assert.deepEqual(E.errors, []); await E.done(); await close(); });
 
+    it('a Home taller than the screen: no add squares past its last row; a gap in the last row keeps one (#223)', async () => {
+      const load = (n) => E.page.evaluate((n) => { const v = window.__v1, d = v.draft(); const h = d.pages.find((x) => x.kind === 'home'); h.cards = Array.from({ length: n }, () => ({ t: 'page', page: 'clock', size: '1x1' })); v.load(d); }, n);
+      const rects = () => E.page.evaluate(() => ({
+        cards: [...document.querySelectorAll('.v1-cell.card')].map((e) => e.getBoundingClientRect()).map((b) => ({ top: b.top, bottom: b.bottom })),
+        adds: [...document.querySelectorAll('.v1-cell.add')].map((e) => e.getBoundingClientRect()).map((b) => ({ top: b.top, bottom: b.bottom })),
+      }));
+      try {
+        await load(15); await settle(E.page, 400);  // 5 full rows of three: taller than either screen
+        let r = await rects();
+        assert.equal(r.adds.length, 0, `a full last row: no add square under it (${r.adds.length})`);
+        await E.page.locator('button', { hasText: 'Add a card at the end' }).click(); await settle(E.page, 200);
+        await E.page.locator('.v1-cardlist .v1-opt', { hasText: 'Screen' }).first().click(); await settle(E.page, 200);
+        await E.page.locator('.v1-cardlist .v1-opt').first().click(); await settle(E.page, 300);
+        assert.equal((await cards(E.page)).length, 16, 'Add a card at the end starts a new row');
+        await load(14); await settle(E.page, 400);
+        r = await rects();
+        const last = Math.max(...r.cards.map((c) => c.bottom));
+        assert.equal(r.adds.length, 1, 'the gap in the last row has its add square');
+        assert.ok(r.adds.every((a) => a.top < last), 'it sits in the last row, not under it');
+      } finally { await E.page.evaluate((cards) => { const v = window.__v1, d = v.draft(); d.pages.find((x) => x.kind === 'home').cards = cards; v.load(d); }, CARDS); await settle(E.page, 300); }
+    });
     it('the editing layer sits on the renderer\'s card boxes, before and after a scroll', async () => {
       const a = await boxes(E.page);
       assert.equal(a.r.length, CARDS.length);

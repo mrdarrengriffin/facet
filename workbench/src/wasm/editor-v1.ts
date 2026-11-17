@@ -535,7 +535,9 @@ function render() {
 function gridPanel(p: Page, cssW: number) {
   const cards = p.cards ?? [], { at, occ } = place(cards, draft.pages);
   const fit = Math.floor((S() - geo.inset - geo.y + geo.gap) / (geo.cw + geo.gap)) * 2;  // the squares one screen shows
-  const rows = Math.max(occ.length + (occ.length % 2) + 2, fit);
+  // the rows the cards use, or one screen when they use less: never a row past the last one, where the panel's page has
+  // ended (it never scrolls into empty space, so that row was cut off at the bottom; a new row = Add a card at the end, #223)
+  const rows = Math.max(occ.length + (occ.length % 2), fit);
   const s = preview(p, cssW, 'Live panel');
   const k = cssW / S();
   const wrap = h('div', 'v1-grid');
