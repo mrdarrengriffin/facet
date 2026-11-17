@@ -1,6 +1,7 @@
 // Facet core shared by every host (README.md): the WASM workbench (core/main.cpp) and the device firmware
 // (device/fw_device.h). Themes from the generated token tables, the component registry, and render() = build one
 // component on a screen exactly the way the workbench preview does.
+#include "src/misc/lv_event_private.h"  // lv_event_dsc_t filter (tap_guard: which ancestors take a click)
 #include <algorithm>
 #include <array>
 #include <functional>
@@ -376,7 +377,7 @@ Built *built_of(lv_obj_t *scr, bool make) {
 }
 // Slide off to cancel (BF-001, states.json "moved off stays silent"): LVGL's press lock still sends CLICKED when the
 // finger is released outside the pressed object (no scroll started). One indev hook for every component: a click whose
-// release point is off the pressed object (and every object its events bubble to) is stopped before any handler sees it;
+// release point is off the pressed object (and every object its events bubble to that has a click handler of its own) is stopped before any handler sees it;
 // so is a long press whose finger has already slid off (LVGL times it without looking at where the finger went).
 uint32_t input_n = 0;  // presses so far (any pointer): an update with the same props after one is applied again
 void tap_guard(lv_event_t *e) {
@@ -396,8 +397,19 @@ void tap_guard(lv_event_t *e) {
   lv_indev_get_point(in, &p);
   const bool longp = code == LV_EVENT_LONG_PRESSED || code == LV_EVENT_LONG_PRESSED_REPEAT;
   if (longp && (LV_ABS(p.x - down.x) > touch::slop || LV_ABS(p.y - down.y) > touch::slop)) { lv_indev_stop_processing(in); return; }
+  // on the pressed object, or on one its events bubble to that takes the click itself (its own click / long press
+  // handler: a control round it). Layout boxes bubble too (every fx::box), and a page body or a screen can be
+  // clickable, but none of them takes the click: a release over a grid's column, past the pressed cell, cancels (#80)
+  auto takes_click = [](lv_obj_t *x) {
+    for (uint32_t i = 0; i < lv_obj_get_event_count(x); i++) {
+      const uint32_t f = lv_obj_get_event_dsc(x, i)->filter & ~(uint32_t) LV_EVENT_PREPROCESS;
+      if (f == LV_EVENT_CLICKED || f == LV_EVENT_SHORT_CLICKED || f == LV_EVENT_SINGLE_CLICKED || f == LV_EVENT_LONG_PRESSED ||
+          f == LV_EVENT_LONG_PRESSED_REPEAT) return true;
+    }
+    return false;
+  };
   for (lv_obj_t *x = o; x; x = lv_obj_has_flag(x, LV_OBJ_FLAG_EVENT_BUBBLE) ? lv_obj_get_parent(x) : nullptr)
-    if (lv_obj_hit_test(x, &p)) return;
+    if ((x == o || takes_click(x)) && lv_obj_hit_test(x, &p)) return;
   lv_indev_stop_processing(in);
 }
 void guard_taps() {  // every pointer indev once (the WASM stages and the panel's touch both come through render)

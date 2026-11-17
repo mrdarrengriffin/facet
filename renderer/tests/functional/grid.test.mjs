@@ -128,6 +128,15 @@ export default {
       const w = 8 * (px(t, 'touch:min') - GR(t)); await at(t, { cols: 8, gap: 'none', items: 'bolt,bolt,bolt' }, w);
       t.eq([icons(t).length, cells(t).length], [3, 0], `cells ${w} / 8 wide (under touch:min): three icons, none clickable`);
     } },
+    { name: 'slide off to cancel (#80): press a cell, slide off it (still over the grid, past the cells), release: no pick', async run(t) {
+      await at(t, { cols: 4, items: ITEMS }); const cs = cells(t);
+      const [x, y] = mid(cs[0]), dx = cs[1].x + cs[1].w / 2 - x;  // onto the next cell: the grid's own box, not the pressed cell
+      let ev = t.drag(null, { from: [x, y], by: [dx, 0] });
+      t.ok(!ev.some((e) => e.kind === 'event' && e.name === 'pick'), `slid onto the next cell: no pick (${JSON.stringify(ev.filter((e) => e.kind === 'event').map((e) => e.name))})`);
+      ev = t.drag(null, { from: [x, y], by: [0, Math.min(300, t.b.S - 1 - y)] });
+      t.ok(!ev.some((e) => e.kind === 'event' && e.name === 'pick'), 'slid down off it: no pick');
+      ev = t.tap({ at: mid(cs[0]) }); t.emitted(ev, 'pick', /./);
+    } },
     { name: 'empty: the empty words (not blank); an update fills it in place', async run(t) {
       const g0 = await at(t, { cols: 4, _items: true, items: '', empty: 'No bins today' });
       t.ok(!!lab0(t, 'No bins today'), 'the empty text'); t.ok(g0.h > 0, 'not a blank zero-height grid');
