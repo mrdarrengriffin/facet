@@ -142,6 +142,23 @@ export default {
       await open(t, { source: 'open_meteo' });
       t.has(t.texts(), /^offline$/i, 'Offline'); t.has(t.texts(), /^--°$/, 'no temperature'); t.hasNot(t.texts(), /^now$/i, 'no hours');
     } },
+    { name: 'auto (the default): Home Assistant\'s forecast when it has the weather entity, no Open-Meteo read', async run(t) {
+      home(t); t.web.serve(OM, omReply()); t.ha.s[W] = { '': 'rainy', temperature: '9.6' };
+      await open(t, { weather: W });
+      t.has(t.texts(), /^10°$/, 'the entity\'s temperature'); t.has(t.texts(), /^rain$/i, 'its condition');
+      t.ok(asks(t).some((a) => a.service === 'weather.get_forecasts'), 'its forecast asked');
+      t.wait(61000);
+      t.eq(t.web.asked.filter((x) => OM.test(x)).length, 0, 'Open-Meteo never read');
+    } },
+    { name: 'auto (the default): no weather entity in Home Assistant = Open-Meteo; the entity coming back = Home Assistant again', async run(t) {
+      home(t); t.web.serve(OM, omReply({ temp: 4.4 }));
+      await open(t, {});
+      t.wait(61000);
+      t.ok(t.web.asked.some((x) => OM.test(x)), 'Open-Meteo read once Home Assistant has said it has none');
+      t.has(t.texts(), /^4°$/, 'Open-Meteo\'s weather');
+      t.ha.set('weather.forecast_home', 'sunny', { temperature: '21.4' }); t.wait(61000);
+      t.has(t.texts(), /^21°$/, 'the entity, once Home Assistant has it'); t.has(t.texts(), /^sunny$/i, 'its condition');
+    } },
     { name: 'Home card (C52): the weather now on the same feed, the real Weather icon as its preview', async run(t) {
       await t.device(deck({ source: 'sample' }));
       const c = t.part('card');

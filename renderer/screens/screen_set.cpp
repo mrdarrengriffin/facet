@@ -127,6 +127,7 @@ struct Page {
   // "value": a source whose Source row value adds a word of the feed's (sources.json "value": the feed attribute, the
   // Overhead's "centre": "adsb.lol · centred on Home"), following the pick live
   lv_obj_t *src_row = nullptr;
+  bool rebuild = false, rebuild_on_pick = false;  // a Source pick that shows or hides a parameter's row: the page again (after the tap)
   std::string wait_reg;  // a registry domain not read yet when the Source was worked out: built again once it is (#129)
   std::map<std::string, std::string> src_value;  // source id -> its "value" attribute (none = the name alone)
   std::string src_shown = "\x01";
@@ -389,11 +390,22 @@ void build_page(lv_obj_t *parent, fw::Props p) {
     const char *v = entry["params"][k] | (const char *) nullptr;
     return v ? fw::spec::param_value(def, v) : fw::spec::param_default(def);  // an old pick no longer offered: the default
   };
+  // a parameter some sources fill (sources.json "fills") that the source shown does not: no row (it reads nothing)
+  std::set<std::string> unfilled;
+  if (linked && cur != fw::src::SAMPLE) {
+    for (ArduinoJson::JsonVariantConst x : srcs)
+      for (ArduinoJson::JsonPairConst f : x["fills"].as<ArduinoJson::JsonObjectConst>()) unfilled.insert(f.key().c_str());
+    for (ArduinoJson::JsonVariantConst x : srcs)
+      if (cur == (x["id"] | ""))
+        for (ArduinoJson::JsonPairConst f : x["fills"].as<ArduinoJson::JsonObjectConst>()) unfilled.erase(f.key().c_str());
+    pg->rebuild_on_pick = !unfilled.empty() || [&] { for (ArduinoJson::JsonVariantConst x : srcs) if (x["fills"].size()) return true; return false; }();
+  }
   for (ArduinoJson::JsonPairConst kv : params) {
     if (!kv.value().is<ArduinoJson::JsonObjectConst>()) continue;
     const std::string type = kv.value()["type"] | "", key = kv.key().c_str();
     if (type == "hidden" || type.empty()) continue;
     if (linked && key == "source") continue;  // the Source row above sets it
+    if (unfilled.count(key)) continue;  // a parameter only other sources read (Weather's Forecast with Open-Meteo)
     if (!any) { group(c, "options", false); any = true; }
     const std::string v = value(kv.key().c_str(), kv.value()), label = kv.value()["label"] | kv.key().c_str();
     Doc rd;
@@ -579,12 +591,14 @@ void build_page(lv_obj_t *parent, fw::Props p) {
         v.set(p.pval[i].c_str());
         keep(pg, pg->sheet, p.pkey[i], v.as<ArduinoJson::JsonVariantConst>());
       }
+      if (p.key == "source" && pg->rebuild_on_pick) pg->rebuild = true;
     }, LV_EVENT_VALUE_CHANGED, pg);
   // an open HA pick follows the link (a read ends) and a tap that changes its rows (rebuilt here, after the tap)
   fx::every(pg->root, 50, [pg] {
     // the Source was worked out before Home Assistant's registry came: once it has, the page again (the row names the
     // integration the forecast really comes from, the greyed ones are right)
     if (!pg->wait_reg.empty() && fw::dev::ha_link::reg(pg->wait_reg)) { pg->wait_reg.clear(); fw::dev::reload("screen_set"); return; }
+    if (pg->rebuild && !fw::sheet::is_open(pg->sheet)) { pg->rebuild = false; fw::dev::reload("screen_set"); return; }
     if (pg->src_row && !pg->from_feed.empty() && pg->src_pick >= 0) {  // the Source value's feed word follows the pick and the feed
       const Pick &sp = pg->picks[pg->src_pick];
       const int sel = sp.sel;

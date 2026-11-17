@@ -90,6 +90,22 @@ export default {
       t.ok(t.texts().filter((x) => x === 'Met Office').length >= 2, 'Met Office is listed (and on the Source row)');
       t.has(t.texts(), /not set up in home assistant/i, 'the ones Home Assistant does not have are greyed with the reason');
     } },
+    { name: 'Weather > Source: Open-Meteo shows no Forecast row; Home Assistant shows it (#217)', async run(t) {
+      const dk = (source) => ({ v: 2, rev: 9, start: 'h', pages: [
+        { id: 'h', kind: 'home', name: 'Home', cards: [{ t: 'page', page: 'weather', size: 'l' }] },
+        { id: 'weather', kind: 'weather', params: { source } }] });
+      await t.device(dk('open_meteo'));
+      act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'weather' } });
+      t.has(t.part('list_row', 'Source')?.texts ?? [], /^Open-Meteo$/, 'the Source row names Open-Meteo');
+      t.ok(!t.part('list_row', 'Forecast'), 'no Forecast row');
+      await t.device(dk('ha'));
+      act(t, { do: 'nav.open', screen: 'screen_set', params: { id: 'weather' } });
+      t.ok(t.part('list_row', 'Forecast'), 'Home Assistant: the Forecast row');
+      t.tap(/^Source$/); t.b.settle(1200); t.tap(/^Open-Meteo$/); t.b.settle(1200); t.wait(300); t.b.settle(800);
+      if (t.texts().some((x) => /^Met\.no$/.test(x))) { t.tap({ clk: 0 }); t.b.settle(1200); t.wait(300); }
+      t.eq(deck(t).pages.find((p) => p.id === 'weather').params.source, 'open_meteo', 'the pick reaches the deck');
+      t.ok(!t.part('list_row', 'Forecast'), 'picking Open-Meteo hides the Forecast row');
+    } },
     { name: 'no Card on Home row: a screen\'s card is added and removed like any card; old decks keep their cards', async run(t) {
       await t.device();
       const before = deck(t).pages.find((p) => p.kind === 'home').cards.filter((c) => c.page === 'moon').length;

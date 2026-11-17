@@ -10341,15 +10341,16 @@
    "layout": "center",
    "params": {
     "source": {
-     "about": "Where the weather comes from: Open-Meteo (a public forecast, no account or key: the panel reads it over the internet every 15 minutes while this screen or its Home card shows), a weather entity in Home Assistant (its forecast too), or a made-up forecast for previews.",
+     "about": "Where the weather comes from: automatic (the default: Home Assistant's forecast when it has one, else Open-Meteo), Open-Meteo (a public forecast, no account or key: the panel reads it over the internet every 15 minutes while this screen or its Home card shows), a weather entity in Home Assistant (its forecast too), or a made-up forecast for previews.",
      "type": "select",
      "options": [
+      "auto",
       "open_meteo",
       "ha",
       "sample"
      ],
      "label": "Source",
-     "default": "ha"
+     "default": "auto"
     },
     "weather": {
      "about": "The weather forecast to show, such as the one Home Assistant sets up for your home.",
@@ -10379,15 +10380,16 @@
    "layout": "list",
    "params": {
     "source": {
-     "about": "Where the weather comes from: Open-Meteo (a public forecast, no account or key: the panel reads it over the internet every 15 minutes while this screen or its Home card shows), a weather entity in Home Assistant (its forecast too), or a made-up forecast for previews.",
+     "about": "Where the weather comes from: automatic (the default: Home Assistant's forecast when it has one, else Open-Meteo), Open-Meteo (a public forecast, no account or key: the panel reads it over the internet every 15 minutes while this screen or its Home card shows), a weather entity in Home Assistant (its forecast too), or a made-up forecast for previews.",
      "type": "select",
      "options": [
+      "auto",
       "open_meteo",
       "ha",
       "sample"
      ],
      "label": "Source",
-     "default": "ha"
+     "default": "auto"
     },
     "weather": {
      "about": "The weather forecast to show, such as the one Home Assistant sets up for your home.",
@@ -11188,7 +11190,7 @@
     ]
    },
    "panel.weather": {
-    "source": "ha",
+    "source": "auto",
     "every_ms": 60000,
     "fields": [
      {

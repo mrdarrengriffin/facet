@@ -6,7 +6,7 @@
 //   line(doc, screen, entry)     the Screens list's sub line: the source's name, "Built in" when it has none
 //   adapter(src, param)          the spec "source" value (C51 adapter) a source sets: its adapter, else "ha" for a
 //                                Home Assistant source, else its id; "" when the spec's source parameter has no such option
-//   shown(doc, screen, entry, param, v)  the source a page really uses, given the spec's source parameter (param = its
+//   shown(doc, screen, entry, param, v)  the source a page really uses (v "auto": auto_adapter()), given the spec's source parameter (param = its
 //                                definition, v = its value): the picked source when it sets v or sets nothing, else the
 //                                first source that sets v (of several, the one whose integration has the page's entity: fits());
 //                                v "sample" and no such source = SAMPLE (named "Sample (previews)")
@@ -65,8 +65,24 @@ inline bool fits(ArduinoJson::JsonVariantConst x, ArduinoJson::JsonVariantConst 
   for (const auto &row : *r) if (row.id == ent) return row.platform == plat;
   return false;
 }
+// the spec value "auto" (a screen's automatic default, Weather): the adapter of the first Home Assistant source whose
+// domain Home Assistant has an entity of (its registry), else the first source's (the keyless public one)
+inline std::string auto_adapter(const ArduinoJson::JsonDocument &d, const std::string &screen, ArduinoJson::JsonVariantConst param) {
+  std::string first;
+  for (ArduinoJson::JsonVariantConst x : of(d, screen)) {
+    const std::string a = adapter(x, param);
+    if (a.empty()) continue;
+    if (first.empty()) first = a;
+    const std::string dom = x["detect"]["domain"] | "";
+    if (strcmp(x["kind"] | "", "ha") || dom.empty()) continue;
+    const auto *r = dev::ha_link::reg(dom);
+    if (r && !r->empty()) return a;
+  }
+  return first;
+}
 inline std::string shown(const ArduinoJson::JsonDocument &d, const std::string &screen, ArduinoJson::JsonVariantConst entry,
-                         ArduinoJson::JsonVariantConst param, const std::string &v) {
+                         ArduinoJson::JsonVariantConst param, const std::string &v0) {
+  const std::string v = v0 == "auto" ? auto_adapter(d, screen, param) : v0;
   const std::string p = picked(d, screen, entry);
   bool linked = false, p_sets = false;
   const bool saved = entry["source"].is<const char *>();  // the person picked it (not the first by default)

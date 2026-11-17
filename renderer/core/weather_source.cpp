@@ -33,11 +33,14 @@
 //           become the Home Assistant conditions the rest of this file speaks (wmo()). A failed read keeps the last
 //           forecast; with none yet the feed is error (Offline). No home = error.
 //   sample  the docs forecast (core/weather.h sample: today, real hours), for previews and tests
+//   auto    (the default) ha when Home Assistant has the weather entity (or, failing it, any weather entity: the first
+//           in its registry), else open_meteo; a picked source always wins
 // Settings: source, weather (the ha adapter's entity), lat, lon (home; "" = Home Assistant's zone.home, the default).
 // Day or night (the icon): the sun at home (lat / lon, else zone.home, else the docs sample place), core/sun.h.
 // More adapters (Met Office's own API ...) = more rows here, no screen change.
 #include <cstdio>
 #include <ctime>
+#include "device.h"
 #include "feed.h"
 #include "fw.h"
 #include "ha.h"
@@ -300,7 +303,7 @@ void fetch(const std::string &ent) {
 }
 class Weather : public feed::Feed {
  public:
-  Weather() : Feed("panel.weather", 60000, "ha", FIELDS) {}
+  Weather() : Feed("panel.weather", 60000, "auto", FIELDS) {}
   using Feed::put;
   using Feed::state;
 
@@ -313,11 +316,26 @@ class Weather : public feed::Feed {
     put_data(wx::sample(now), now);
   }
   void fill() override {
-    const std::string src = source();
-    if (src == "open_meteo") { open_meteo(); return; }
-    om_have = false, om_reading = false, om_at = 0, om_fails = 0;
+    std::string src = source(), ent = cfg()["weather"] | "";
+    if (src == "auto") {  // the default: Home Assistant's forecast when it has one, else Open-Meteo
+      if (ent.rfind("weather.", 0) == 0) reads(with_home({{ent, ""}, {ent, "temperature"}, {ent, "apparent_temperature"}}));
+      const std::string *st = ent.rfind("weather.", 0) == 0 ? ha::get(ent) : nullptr;
+      const feed::State s = st ? feed::of(st) : feed::MISSING;
+      if (s == feed::OK || s == feed::UNAVAILABLE) src = "ha";
+      else {
+        dev::ha_link::reg_fetch("weather");  // another weather entity in Home Assistant (its registry, once read)
+        const auto *r = dev::ha_link::reg("weather");
+        if (r && !r->empty()) src = "ha", ent = r->front().id;
+        else if (s == feed::LOADING && ha::S().connected && !ha::settled()) {  // Home Assistant has not answered yet
+          ent_now.clear();
+          put_empty(feed::LOADING);
+          return;
+        } else src = "open_meteo";
+      }
+    }
+    if (src == "open_meteo") { open_meteo(source() == "auto" ? ent : ""); return; }
+    om_have = false, om_reading = false, om_at = 0, om_fails = 0, om_key.clear();
     place();
-    const std::string ent = cfg()["weather"] | "";
     if (ent.rfind("weather.", 0) != 0) { ent_now.clear(); reads({}); put_empty(feed::ERROR); return; }  // no weather entity picked
     if (changed() || ent != ent_now) hours_got.clear(), days_got.clear(), fetched_hour = -1, ent_now = ent;
     if (back()) waiting_h = waiting_d = false;  // asks sent before Home Assistant dropped never come back
@@ -348,9 +366,11 @@ class Weather : public feed::Feed {
     lat = home ? la : 52.2, lon = home ? lo : -1.2;
     return home;
   }
-  void open_meteo() {
+  void open_meteo(const std::string &watch) {  // watch: the entity the automatic default goes back to when it comes
     ent_now.clear();
-    reads(with_home({}));
+    reads(with_home(watch.rfind("weather.", 0) == 0
+                        ? std::vector<std::pair<std::string, std::string>>{{watch, ""}, {watch, "temperature"}, {watch, "apparent_temperature"}}
+                        : std::vector<std::pair<std::string, std::string>>{}));
     if (!place()) { put_empty(feed::ERROR); return; }  // nowhere to forecast for: not set up
     char url[400];
     snprintf(url, sizeof url,

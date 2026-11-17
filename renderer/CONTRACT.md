@@ -426,7 +426,7 @@ default, read by the panel itself through `core/net.h`, asking only for what the
 a few reads a minute while the feed is shown); then one entry per Home Assistant integration that provides the data,
 named for it ("FlightRadar24", "Met Office": sources.json `detect.integration`), listed greyed and not pickable, "Not set
 up in Home Assistant", while Home Assistant does not have that integration (checked each time the Source sheet opens),
-so people see what they could add. `sample` is for the docs, the workbench and the tests only: a panel build never
+so people see what they could add. A screen may default to `auto` instead: the Home Assistant source when Home Assistant has its data, else the public one (Weather: Home Assistant's forecast when it has a weather entity, else Open-Meteo); a picked source always wins (core/sources.h auto_adapter). `sample` is for the docs, the workbench and the tests only: a panel build never
 offers it, and a deck that saved it reads the screen's default. Each entry is an adapter of the screen's one feed (C51): it maps its source onto the feed's own model (the
 Overhead feed's Flight), and everything after that (filters, words, units) is shared. A source that cannot fill the
 feed yet is listed in `sources/sources.json` as planned, with why. A direct source's terms (licence, rate limit, CORS:
