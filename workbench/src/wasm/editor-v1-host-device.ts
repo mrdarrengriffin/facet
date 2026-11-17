@@ -1,6 +1,6 @@
 // Facet editor v1's host on the panel itself (plain HTTP, the panel's own origin: its writes need no key): the device
 // bundle (scripts/editor-device.mjs) swaps this in for ./editor-v1-host. The panel's routes (firmware/fw_device.h):
-// GET /fw/deck, GET|POST /fw/settings, GET /fw/link, GET /fw/entities (the pickers, through the panel's own Home
+// GET /fw/deck, GET /fw/config (the backup), GET|POST /fw/settings, GET /fw/link, GET /fw/entities (the pickers, through the panel's own Home
 // Assistant link), GET /fw/ha?want= (live values for the previews), POST /fw/spec {kind: deck | revert}, POST /fw/act
 // {do: ha.connect}.
 import type { HaBridge } from './engine';
@@ -125,4 +125,5 @@ export const host: V1Host = {
     try { const r = await post('/fw/spec', { kind: 'revert', id: 'deck' }); return r.body?.ok ? { ok: true } : { ok: false, why: said(r.body, 'The panel did not answer.') }; } catch { return { ok: false, why: 'The panel did not answer.' }; }
   },
   deckChanged(deck) { inDeck = entities(deck, new Set()); },
+  async config() { try { const r = await j('/fw/config'); return r.ok && r.body?.facet === 'config' ? r.body : null; } catch { return null; } },
 };

@@ -5,6 +5,8 @@
 //             each its own swipe page, its settings from its spec params); add, name, order (drag a tab, or the
 //             arrows), remove, the start page. A fresh panel holds one empty Home.
 //   Settings  the schema's settings in their groups (part 3 makes it the panel's own Settings list)
+//   Backup    Settings > Backup: Export downloads the panel's config (its screens, cards and settings: the panel's
+//             GET /fw/config, never a secret); Import loads one into the draft and opens the review, like Save
 //   Save      Save · N opens the review: the changes in words, the panel's own deck check (fw_spec "check" in the
 //             WASM engine) with every error said against its screen; Save keeps it as what "the panel" runs (this
 //             page's memory); Undo goes back to what ran before the last save; Back to factory = one empty Home.
@@ -1182,8 +1184,54 @@ function settingsSide(): HTMLElement[] {
     out.push(h('h2', 'cap', g.label));
     for (const s of boot.settings.settings.filter((x) => x.group === g.id)) out.push(field(s.label, s.help, settingControl(s)));
   }
+  out.push(...backupRows());
   out.push(h('h2', 'cap', 'Start again'), factoryBtn());
   return out;
+}
+// ---- Backup (#170): one file with the panel's whole config, {facet: "config", version, deck, settings} (the panel's
+// GET /fw/config, core/device.h config_json: no Wi-Fi, keys or tokens). Export = what the panel runs (saved), as a
+// download. Import = a file's deck and settings into the draft: screens this firmware does not have are left out and
+// named, Home Assistant's link stays as it is, then the review and the panel's check, as Save
+const CONFIG_VERSION = 1;
+let imported: { file: string; skipped: string[] } | null = null;
+function backupRows(): HTMLElement[] {
+  const ex = btn('Export', 'Download the screens, cards and settings the panel runs as one file', false, () => void exportConfig());
+  ex.dataset.testid = 'backup-export';
+  const file = h('input');
+  file.type = 'file', file.accept = '.json,application/json', file.hidden = true, file.dataset.testid = 'backup-file';
+  file.onchange = () => { const f = file.files?.[0]; file.value = ''; if (f) void importConfig(f); };
+  const im = btn('Import…', 'Load a config file: you see every change before Save', false, () => file.click());
+  im.dataset.testid = 'backup-import';
+  const wrap = h('div', 'v1-acts');
+  wrap.append(im, file);
+  return [h('h2', 'cap', 'Backup'),
+    field('Export', 'This panel\'s screens, cards and settings as one file. No Wi-Fi, keys or tokens.', ex),
+    field('Import', 'Load a file exported from a panel. You see every change before Save.', wrap)];
+}
+async function exportConfig() {
+  const c = (host.config ? await host.config() : null) ?? { facet: 'config', version: CONFIG_VERSION, deck: toDeck(panel.runs, panel.rev), settings: { ...panel.runs.settings } };
+  const a = h('a');
+  a.href = URL.createObjectURL(new Blob([`${JSON.stringify(c, null, 1)}\n`], { type: 'application/json' }));
+  a.download = `facet-config-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+async function importConfig(f: File) {
+  let c: any = null;
+  try { c = JSON.parse(await f.text()); } catch { /* said below */ }
+  if (!c || c.facet !== 'config' || !Array.isArray(c.deck?.pages)) { alert(`${f.name} is not a Facet config file (Settings > Backup > Export makes one).`); return; }
+  if (!(Number(c.version) <= CONFIG_VERSION)) { alert(`${f.name} was made by a newer Facet (format ${c.version}). Update this panel first.`); return; }
+  const pages: Page[] = clone(c.deck.pages);
+  const skipped = pages.filter((p) => !own(p) && !boot.screens[p.kind]).map((p) => p.name || p.kind);
+  const set: Record<string, unknown> = { ...defaults() };
+  for (const s of boot.settings.settings) if (c.settings && s.id in c.settings) set[s.id] = c.settings[s.id];
+  const d = known({ pages, start: c.deck.start ?? pages[0]?.id ?? 'home', settings: set, ha: draft.ha });
+  if (!d.pages.length) { alert(`${f.name} has no screens this panel can show.`); return; }
+  imported = { file: f.name, skipped };
+  edit(() => { draft = d; sel = d.start; });
+  saveErr = null; side = 'review'; top(); render();
 }
 function haStatus() {
   const a = draft.ha, at = a.url.replace(/^https?:\/\//, '').replace(/[:/].*$/, '');
@@ -1308,6 +1356,13 @@ function reviewSide(): HTMLElement[] {
   const out: HTMLElement[] = [];
   const ch = changes(panel.runs, draft);
   out.push(sideHead(ch.length ? `${ch.length} change${ch.length === 1 ? '' : 's'}` : 'Nothing to save', savedAt ? `since you saved at ${savedAt}` : 'since the panel last saved'));
+  if (imported) {  // an Import: where it came from, and the screens this firmware does not have (left out)
+    const n = h('div', `v1-note${imported.skipped.length ? '' : ' ok'}`);
+    n.dataset.testid = 'import-note';
+    n.append(h('i', 'dot'), document.createTextNode(`Imported from ${imported.file}. Home Assistant's link stays as it is.` +
+      (imported.skipped.length ? ` Left out: ${imported.skipped.join(', ')} (not on this panel's firmware).` : '')));
+    out.push(n);
+  }
   const ul = h('ul', 'v1-changes');
   for (const c of ch) {
     const li = h('li');
@@ -1343,6 +1398,7 @@ async function save() {
   panel.rev++;
   panel.runs = clone(draft);
   savedAt = new Date().toTimeString().slice(0, 5);
+  imported = null;
   side = 'saved';
   top(); render();
   if (link) void refetch();

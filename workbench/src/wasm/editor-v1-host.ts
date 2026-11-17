@@ -36,6 +36,9 @@ export interface V1Host {
   factory(): Promise<SaveOut>;
   /** the deck being edited after each change: a panel keeps its live values to the entities it names */
   deckChanged?(deck: object): void;
+  /** the config backup as the panel makes it (GET /fw/config: the deck + settings, no secrets); absent or null = the
+   *  editor makes it from what the panel runs (the workbench) */
+  config?(): Promise<object | null>;
 }
 
 const noHa: HaBridge = { states: async () => null, action: async () => undefined, ask: async () => null };

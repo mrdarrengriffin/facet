@@ -46,8 +46,10 @@ it is about, never as a JSON path, and Save waits until it is fixed. Save = the 
 the settings that changed (`POST /fw/settings`). A refused save keeps the edits. Undo after a save goes back to the
 deck and settings before it (kept by the editor); "Back to factory" is kind `revert`.
 
-**Backup (#170).** Export the config as one file and import it (through the same review and check), plus a read-only
-config endpoint for scripts. Neither carries anything sensitive: no Wi-Fi, keys or tokens.
+**Backup (#170).** Settings > Backup. Export downloads the panel's config as one file (`GET /fw/config`: `{facet:
+"config", version: 1, deck, settings}`, the location in the screens' settings included); Import loads one into the
+draft and opens the review: screens this firmware does not have are left out and named there, Home Assistant's link
+stays as it is, and Save sends it through the same check. Neither carries anything sensitive: no Wi-Fi, keys or tokens.
 
 ## Rules
 - Every form comes from `/fw/schema`; a new param or setting shows up with no editor change.

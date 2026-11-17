@@ -1,5 +1,5 @@
 // Editor v1 served BY a panel (scripts/editor-device.mjs bundle, editor-v1-host-device.ts) against a stubbed panel:
-// GET /fw/deck, /fw/settings, /fw/link, /fw/ha?want=, /fw/entities?index=1, POST /fw/spec. The panel subscribes to
+// GET /fw/deck, /fw/config, /fw/settings, /fw/link, /fw/ha?want=, /fw/entities?index=1, POST /fw/spec, /fw/settings. The panel subscribes to
 // every entity it is asked for, for good, so the editor may only ask for the entities its deck names (never the sample
 // screens' demo ids); Save posts exactly the edited deck; a refused Save keeps the edits.
 import { describe, it, after } from 'node:test';
@@ -48,13 +48,17 @@ async function openPanel(device, { answer = () => ({ ok: true, status: 'applied'
   deck.pages.push(...structuredClone(extra));  // pages a test adds (a screen this firmware does not have)
   const ctx = await (await launch()).newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' });
   const page = await ctx.newPage();
-  const P = { page, wants: [], posts: [], errors: [], deck, async done() { await ctx.close(); } };
+  const P = { page, wants: [], posts: [], sets: [], errors: [], deck, async done() { await ctx.close(); } };
   page.on('pageerror', (e) => P.errors.push(String(e)));
   page.on('dialog', (d) => d.accept());
   await page.route('http://panel.test/**', async (r) => {
     const u = new URL(r.request().url());
     if (u.pathname === '/fw/deck') return r.fulfill({ json: { deck } });
-    if (u.pathname === '/fw/settings') return r.fulfill({ json: { ok: true, values: SETTINGS } });
+    if (u.pathname === '/fw/config') return r.fulfill({ json: { facet: 'config', version: 1, deck, settings: SETTINGS } });
+    if (u.pathname === '/fw/settings') {
+      if (r.request().method() === 'POST') { P.sets.push(JSON.parse(r.request().postData())); return r.fulfill({ json: { ok: true } }); }
+      return r.fulfill({ json: { ok: true, values: SETTINGS } });
+    }
     if (u.pathname === '/fw/link') return r.fulfill({ json: { url: 'http://ha.test:8123', token: '…abcd', state: 'linked' } });
     if (u.pathname === '/fw/info') return r.fulfill({ json: { ok: true } });
     if (u.pathname === '/fw/ha') {
@@ -99,8 +103,67 @@ async function addLight(page, q) {
 }
 const homeCards = (deck, id) => deck.pages.find((p) => p.id === id).cards;
 
+const SECRET = /token|password|passwd|secret|psk|api_?key|ssid|wifi|bearer|authorization/i;
+const keysOf = (v, out = []) => { if (Array.isArray(v)) v.forEach((x) => keysOf(x, out)); else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) { out.push(k); keysOf(x, out); } return out; };
+const shot = async (page, name) => { if (process.env.SHOT_DIR) await page.screenshot({ path: join(process.env.SHOT_DIR, name) }); };
+const backup = async (page) => {
+  await page.locator('#v1-settings').click(); await settle(page, 300);
+  await page.locator('[data-testid=backup-export]').scrollIntoViewIfNeeded(); await settle(page, 200);
+};
+
 for (const device of ['guition', 'waveshare']) {
   describe(`device host (${device})`, () => {
+    it('Backup > Export downloads the panel\'s config: the deck and settings, no secret keys, no token (#170)', async () => {
+      const P = await openPanel(device);
+      try {
+        await backup(P.page);
+        await shot(P.page, `${device}-backup-section.png`);
+        const [dl] = await Promise.all([P.page.waitForEvent('download'), P.page.locator('[data-testid=backup-export]').click()]);
+        assert.match(dl.suggestedFilename(), /^facet-config-\d{4}-\d\d-\d\d\.json$/);
+        const txt = readFileSync(await dl.path(), 'utf8'), c = JSON.parse(txt);
+        assert.deepEqual([c.facet, c.version], ['config', 1], 'the format and its version');
+        assert.deepEqual(c.deck.pages.map((p) => p.id), DECK.pages.map((p) => p.id), 'the deck the panel runs');
+        assert.equal(c.settings.theme, SETTINGS.theme, 'its settings');
+        assert.deepEqual(keysOf(c).filter((k) => SECRET.test(k)), [], 'no secret keys');
+        assert.ok(!txt.includes('abcd') && !txt.includes('ha.test'), 'not Home Assistant\'s token hint or address');
+        assert.deepEqual(P.errors, []);
+      } finally { await P.done(); }
+    });
+    it('Backup > Import: the review names the file and the screen this firmware lacks (left out); Save posts the deck and settings (#170)', async () => {
+      const P = await openPanel(device);
+      try {
+        const file = { facet: 'config', version: 1, settings: { ...SETTINGS, theme: 'light' }, deck: { v: 2, rev: 5, start: 'den', pages: [
+          { id: 'den', kind: 'home', name: 'Den', cards: [{ t: 'light', e: 'light.test_chair', size: '1x1', label: 'Chair' }, { t: 'page', page: 'clock', size: '1x1' }] },
+          { id: 'clock', kind: 'clock' }, { id: 'old', kind: 'retired_screen' }] } };
+        await backup(P.page);
+        await P.page.setInputFiles('[data-testid=backup-file]', { name: 'den-panel.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(file)) });
+        await settle(P.page, 600);
+        const note = await P.page.locator('[data-testid=import-note]').innerText();
+        assert.match(note, /den-panel\.json/, 'the review names the file');
+        assert.match(note, /Left out: retired_screen/, 'and the screen this firmware does not have');
+        await shot(P.page, `${device}-import-review.png`);
+        await P.page.locator('.v1-acts .btn.primary', { hasText: 'Save' }).click(); await settle(P.page);
+        const sent = P.posts.filter((p) => p.kind === 'deck').at(-1);
+        assert.ok(sent, 'Save posted the deck');
+        assert.deepEqual(sent.spec.pages.map((p) => p.id), ['den', 'clock'], 'the file\'s screens, the missing one left out');
+        assert.equal(sent.spec.start, 'den');
+        assert.equal(P.sets.at(-1)?.values?.theme, 'light', 'the file\'s settings that differ');
+        assert.deepEqual(P.errors, []);
+      } finally { await P.done(); }
+    });
+    it('Backup > Import refuses a file that is not a Facet config', async () => {
+      const P = await openPanel(device);
+      try {
+        const said = [];
+        P.page.removeAllListeners('dialog');
+        P.page.on('dialog', (d) => { said.push(d.message()); d.accept(); });
+        await backup(P.page);
+        await P.page.setInputFiles('[data-testid=backup-file]', { name: 'notes.json', mimeType: 'application/json', buffer: Buffer.from('{"hello": 1}') });
+        await settle(P.page, 400);
+        assert.match(said.join(' '), /not a Facet config file/);
+        assert.equal(P.posts.filter((p) => p.kind === 'deck').length, 0, 'nothing sent');
+      } finally { await P.done(); }
+    });
     it('a deck page for a screen this firmware does not have (saved by another version): the editor opens, lists it Removed, Save leaves it out', async () => {
       const gone = { id: 'gone', kind: 'retired_screen', params: { mode: 'x' } };
       const P = await openPanel(device, { extra: [gone] });
