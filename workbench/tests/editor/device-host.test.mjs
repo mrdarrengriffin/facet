@@ -117,6 +117,18 @@ for (const device of ['guition', 'waveshare']) {
         assert.deepEqual(P.errors, [], `no script error after Save: ${P.errors.join(' | ')}`);
       } finally { await P.done(); }
     });
+    it('a screen\'s Source offers no sample data on a panel (#227)', async () => {
+      const P = await openPanel(device);
+      try {
+        await P.page.locator('#v1-settings').click(); await settle(P.page, 300);
+        await P.page.locator('.v1-nav', { hasText: 'Screens' }).click(); await settle(P.page, 300);
+        await P.page.locator('.v1-nav', { hasText: 'Calendar' }).first().click(); await settle(P.page, 300);
+        const side = (await P.page.locator('.v1-side').innerText()).toLowerCase();
+        assert.ok(side.includes('source'), 'the Calendar settings show its Source');
+        assert.ok(!/\bsample\b/.test(side), `no Sample source on a panel: ${side.slice(0, 400)}`);
+        assert.deepEqual(P.errors, []);
+      } finally { await P.done(); }
+    });
     it('asks the panel only for the entities its deck names, across its Homes', async () => {
       const P = await openPanel(device);
       assert.ok((await drawn(P.page)).some((t) => t.includes('ceiling')), 'the Living room Home draws');

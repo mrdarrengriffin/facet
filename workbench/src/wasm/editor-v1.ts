@@ -1079,7 +1079,13 @@ function btn(t: string, label: string, disabled: boolean, f: () => void, cls = '
 function setParam(p: Page, k: string, v: string) { edit(() => { if (!draft.pages.includes(p)) draft.pages.push(p); (p.params ??= {})[k] = v; }); }
 function paramControl(pg: Page, k: string, p: Param): HTMLElement {
   const v = paramVal(pg, k);
-  if (p.type === 'select' && p.options) return p.options.length <= 3 ? seg(p.options.map((o) => [o, o === 'ha' ? 'Home Assistant' : o === 'sample' ? 'Sample' : o]), v, (x) => setParam(pg, k, x)) : list(p.options.map((o) => [o, o]), v, (x) => setParam(pg, k, x));
+  if (p.type === 'select' && p.options) {
+    // sample data is for previews and tests, never a panel's source (#227): a panel's editor leaves it out
+    const opts = host.panel && k === 'source' ? p.options.filter((o) => o !== 'sample' && o !== 'fixtures') : p.options;
+    const word = (o: string) => (o === 'ha' ? 'Home Assistant' : o === 'sample' ? 'Sample' : o);
+    if (opts.length === 1) return h('span', 'dim', word(opts[0]));
+    return opts.length <= 3 ? seg(opts.map((o) => [o, word(o)]), v, (x) => setParam(pg, k, x)) : list(opts.map((o) => [o, o]), v, (x) => setParam(pg, k, x));
+  }
   if (p.type === 'entity') return entityPick(p.domain ?? '', v, (x) => setParam(pg, k, x));
   if (p.type === 'entities') {
     const box = h('div', 'v1-multi');
