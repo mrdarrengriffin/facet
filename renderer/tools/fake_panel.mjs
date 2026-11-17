@@ -71,8 +71,9 @@ export async function start({ port = 8099, den = '1.5x', autoAllow = 0, build = 
         return J(200, want.length ? { values, bound: 0 } : { wants: [], values: {}, bound: 0 });
       }
       if (path === '/fw/deck') { const l = JSON.parse(b.spec('list', '')); const d = JSON.parse(l.deck); return J(200, { deck: d, rev: d.rev, override: true }); }
+      if (path === '/fw/config') return J(200, JSON.parse(b.str('config', (c) => b.str('', (q) => b.m.UTF8ToString(b.m._fw_test(c, q)))) || '{}'));
       if (path === '/fw/act') return J(200, { usage: 'POST /fw/act {"do": "<action>", ...fields} with Authorization: Bearer <key> -> {ok, why?, state?}', actions: JSON.parse(b.spec('actions', '')).actions });
-      return J(404, { ok: false, error: 'docs: /ai /llms.txt /schema.json; GET /fw/info, /fw/spec, /fw/deck, /fw/act, /fw/keys' });
+      return J(404, { ok: false, error: 'docs: /ai /llms.txt /schema.json; GET /fw/info, /fw/spec, /fw/deck, /fw/config, /fw/act, /fw/keys' });
     }
     if (body === undefined || body.length === 0) return J(400, { ok: false, error: 'body is not JSON' });
     if (body.length > 32768) return J(400, { ok: false, error: 'body over 32 KB' });

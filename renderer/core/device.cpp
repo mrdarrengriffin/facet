@@ -936,6 +936,40 @@ std::string restore(const char *json, From from) {
   }
   return err;
 }
+namespace {
+// a key that names something secret (Wi-Fi, keys, tokens, passwords): never in a config export, at any depth
+bool secret_key(const char *k) {
+  std::string l(k ? k : "");
+  for (char &c : l) c = (char) tolower((unsigned char) c);
+  for (const char *w : {"token", "password", "passwd", "secret", "psk", "api_key", "apikey", "ssid", "wifi", "bearer", "authorization"})
+    if (l.find(w) != std::string::npos) return true;
+  return false;
+}
+void scrub(ArduinoJson::JsonVariant v) {
+  if (v.is<ArduinoJson::JsonObject>()) {
+    ArduinoJson::JsonObject o = v.as<ArduinoJson::JsonObject>();
+    std::vector<std::string> drop;
+    for (ArduinoJson::JsonPair kv : o) {
+      if (secret_key(kv.key().c_str())) drop.push_back(kv.key().c_str());
+      else scrub(kv.value());
+    }
+    for (const std::string &k : drop) o.remove(k);
+  } else if (v.is<ArduinoJson::JsonArray>())
+    for (ArduinoJson::JsonVariant x : v.as<ArduinoJson::JsonArray>()) scrub(x);
+}
+}  // namespace
+void config_json(std::string &out) {
+  ArduinoJson::JsonDocument d, deck, set;
+  d["facet"] = "config";
+  d["version"] = CONFIG_VERSION;
+  std::string sj;
+  settings_json(sj);
+  if (!deserializeJson(deck, spec::deck_json())) d["deck"] = deck;
+  if (!deserializeJson(set, sj)) d["settings"] = set["values"];
+  scrub(d.as<ArduinoJson::JsonVariant>());
+  out.clear();
+  serializeJson(d, out);
+}
 void set_daylight(int day) {
   Store &st = store();
   if (st.day == day) return;

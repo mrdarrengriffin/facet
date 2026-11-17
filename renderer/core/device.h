@@ -141,6 +141,12 @@ void observe(Observer cb);  // every applied change (firmware: publish to the en
 // backup: {"facet":"settings","version":1,"values":{id: value, ...}} (no secrets: there are none in settings)
 void settings_json(std::string &out);
 std::string restore(const char *json, From from);  // a backup's values through set(); "" = ok, else the first error
+// the config export (#170; GET /fw/config): {"facet":"config","version":CONFIG_VERSION,"deck":{the deck this panel runs:
+// pages, cards, screen params},"settings":{id: value}}. Never a secret: no Wi-Fi, keys or tokens are in the deck or the
+// settings, and any key that names one (token, password, secret, api_key, psk, ssid, wifi, authorization ...) is dropped at
+// every depth all the same. A newer firmware reads an older version.
+constexpr int CONFIG_VERSION = 1;
+void config_json(std::string &out);
 void set_daylight(int day);                          // the sun for theme auto: 1 day, 0 night, -1 unknown
 const Theme *look(const Theme *stage);               // the theme the device shows over a stage theme
 const Theme *theme_at(lv_obj_t *o);                  // o is a device root: the look it is built in, else nullptr

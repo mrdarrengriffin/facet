@@ -24,6 +24,9 @@
 //   POST /fw/settings  {values:{id: value}} (a backup, or a few) -> each through fw::dev::set (HOST): applied, the
 //                      entities follow and keep it (settings.yaml from firmware/settings_yaml.mjs) -> {ok, error?, settings}
 //                = Restores a settings backup, or changes a few settings.
+//   GET  /fw/config  the config backup {"facet":"config","version":1,"deck":{...},"settings":{...}} (core/device.h
+//                    config_json): the deck (pages, cards, screens' settings) and the settings; no Wi-Fi, keys or tokens
+//                = A backup of the panel's whole config: its pages, cards and settings (no secrets in it).
 //   GET  /screenshot  the glass as a 16-bit BMP, streamed from the framebuffer (no frame copy; paced chunks)
 //                = What the screen shows now (a BMP image), so an assistant can check its work.
 //   GET  /fw/report  the problem report page (HTML, firmware/report.html from flash, gzip): shows /fw/report.txt with
@@ -2183,6 +2186,8 @@ class Handler : public AsyncWebHandler {
       ArduinoJson::JsonDocument d, dk;
       if (dj.empty() || deserializeJson(dk, dj)) { code = 503; s = R"({"ok":false,"error":"no deck"})"; }
       else { d["deck"] = dk; d["rev"] = dk["rev"]; d["override"] = over; serializeJson(d, s); }
+    } else if (path == "/fw/config") {  // the config backup (core/device.h config_json): read only, no secrets
+      if (!in_loop([&] { fw::dev::config_json(s); }, 2000) || s.empty()) code = 503, s = late;
     } else if (path == "/fw/entities") {  // the pickers' lists (ha_link::list), a read of the missing ones started
       // written straight into one reserved string (no JSON document, no growing copies: a house's sensors run to
       // thousands, too many for the 480 panel's heap twice over); send = the domains to answer with (default all asked)

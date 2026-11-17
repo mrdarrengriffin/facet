@@ -13151,6 +13151,12 @@
   },
   {
    "method": "GET",
+   "path": "/fw/config",
+   "about": "the config backup {\"facet\":\"config\",\"version\":1,\"deck\":{...},\"settings\":{...}} (core/device.h config_json): the deck (pages, cards, screens' settings) and the settings; no Wi-Fi, keys or tokens",
+   "says": "A backup of the panel's whole config: its pages, cards and settings (no secrets in it)."
+  },
+  {
+   "method": "GET",
    "path": "/screenshot",
    "about": "the glass as a 16-bit BMP, streamed from the framebuffer (no frame copy; paced chunks)",
    "says": "What the screen shows now (a BMP image), so an assistant can check its work."
