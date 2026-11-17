@@ -26,14 +26,22 @@
 //           weather.get_forecasts (core/ha.h ask: hourly, then daily) on build, every 30 minutes and on a new hour.
 //           Without action responses (or a failed ask) the screen shows the weather now only, never an error.
 //           HA forecasts come by the hour, so "rain from" is the first wet hour (the docs used 15-minute steps).
+//   open_meteo  the public Open-Meteo forecast API (no account or key; CC BY 4.0, free for non-commercial use, fewer
+//           than 10,000 calls a day), read by the panel itself (core/net.h) every 15 minutes while the feed is shown
+//           (after a failure 1, 2, 4, 8 minutes, then every 15): GET https://api.open-meteo.com/v1/forecast for home
+//           (2 decimals, about 1 km) with the weather now, the next 13 hours and 6 days (~2 KB). WMO weather codes
+//           become the Home Assistant conditions the rest of this file speaks (wmo()). A failed read keeps the last
+//           forecast; with none yet the feed is error (Offline). No home = error.
 //   sample  the docs forecast (core/weather.h sample: today, real hours), for previews and tests
-// Day or night (the icon): the sun at lat / lon (feed settings, default the docs sample place), core/sun.h.
-// More adapters (Open-Meteo called by the panel itself, Met Office ...) = more rows here, no screen change.
+// Settings: source, weather (the ha adapter's entity), lat, lon (home; "" = Home Assistant's zone.home, the default).
+// Day or night (the icon): the sun at home (lat / lon, else zone.home, else the docs sample place), core/sun.h.
+// More adapters (Met Office's own API ...) = more rows here, no screen change.
 #include <cstdio>
 #include <ctime>
 #include "feed.h"
 #include "fw.h"
 #include "ha.h"
+#include "net.h"
 #include "sun.h"
 #include "weather.h"
 
@@ -173,16 +181,13 @@ void put_empty(feed::State st) {  // not ok: the words only (no icon, rain line 
   if (gone) put("brief", feed::words(st)), put("days_empty", feed::words(st));
 }
 
-// ---- ha adapter
-void rebuild() {
-  if (ent_now.empty()) return;
-  const std::string *state = ha::get(ent_now), *t = ha::get(ent_now, "temperature"), *f = ha::get(ent_now, "apparent_temperature");
-  if (const feed::State st = feed::of(state); st != feed::OK) { put_empty(st); return; }  // loading, missing, unavailable
+// the feed from the weather now + the forecasts an adapter gathered (hours_got, days_got)
+void assemble(const char *condition, double temp, double feels) {
   const double now = now_ms();
   wx::Data d;
-  d.condition = keep(state->c_str());
-  d.temp = num(t);
-  d.feels = num(f);  // weather.forecast_home (Met.no) has no apparent_temperature: no "Feels" then
+  d.condition = condition;
+  d.temp = temp;
+  d.feels = feels;
   for (const wx::Hour &h : hours_got) {  // from the hour holding now
     if (h.t + HOUR <= now) continue;
     if (d.n_hourly >= 12) break;
@@ -207,6 +212,50 @@ void rebuild() {
     d.daily[d.n_daily++] = x;
   }
   put_data(d, now);
+}
+
+// ---- ha adapter
+void rebuild() {
+  if (ent_now.empty()) return;
+  const std::string *state = ha::get(ent_now), *t = ha::get(ent_now, "temperature"), *f = ha::get(ent_now, "apparent_temperature");
+  if (const feed::State st = feed::of(state); st != feed::OK) { put_empty(st); return; }  // loading, missing, unavailable
+  assemble(keep(state->c_str()), num(t), num(f));  // Met.no has no apparent_temperature: no "Feels" then
+}
+
+// ---- open_meteo adapter
+// a WMO weather code (Open-Meteo's weather_code) -> the Home Assistant condition; day = false turns clear into clear-night
+const char *wmo(int c, bool day = true) {
+  if (c <= 1) return day ? "sunny" : "clear-night";
+  if (c == 2) return "partlycloudy";
+  if (c == 3) return "cloudy";
+  if (c == 45 || c == 48) return "fog";
+  if (c == 56 || c == 57 || c == 66 || c == 67) return "snowy-rainy";  // freezing drizzle / rain
+  if (c == 65 || c == 82) return "pouring";
+  if ((c >= 51 && c <= 63) || c == 80 || c == 81) return "rainy";
+  if ((c >= 71 && c <= 77) || c == 85 || c == 86) return "snowy";
+  if (c == 95) return "lightning-rainy";
+  if (c == 96 || c == 99) return "hail";
+  return "";
+}
+struct Now { std::string cond; double temp = NAN, feels = NAN; };
+// Open-Meteo's reply (timeformat=unixtime): current {weather_code, is_day, temperature_2m, apparent_temperature},
+// hourly / daily {time [...], ...}; false = not that shape
+bool read_open_meteo(const std::string &body, Now &n) {
+  ArduinoJson::JsonDocument d;
+  if (deserializeJson(d, body)) return false;
+  ArduinoJson::JsonObjectConst c = d["current"], h = d["hourly"], y = d["daily"];
+  if (c.isNull() || !c["weather_code"].is<int>()) return false;
+  n.cond = wmo(c["weather_code"] | 3, (c["is_day"] | 1) != 0);
+  n.temp = c["temperature_2m"] | NAN, n.feels = c["apparent_temperature"] | NAN;
+  hours_got.clear(), days_got.clear();
+  ArduinoJson::JsonArrayConst ht = h["time"], hc = h["weather_code"], htp = h["temperature_2m"], hp = h["precipitation"];
+  for (size_t i = 0; i < ht.size() && hours_got.size() < 24; i++)
+    hours_got.push_back({(ht[i] | 0.0) * 1000, keep(wmo(hc[i] | 3)), htp[i] | NAN, hp[i] | 0.0});
+  ArduinoJson::JsonArrayConst dt = y["time"], dc = y["weather_code"], dhi = y["temperature_2m_max"], dlo = y["temperature_2m_min"], dp = y["precipitation_sum"];
+  // a day's time is its local midnight: noon stands for the day (local dates, as the ha adapter's)
+  for (size_t i = 0; i < dt.size() && days_got.size() < 8; i++)
+    days_got.push_back({((dt[i] | 0.0) + 12 * 3600) * 1000, keep(wmo(dc[i] | 3)), dhi[i] | NAN, dlo[i] | NAN, dp[i] | 0.0});
+  return true;
 }
 void forecasts(const std::string &json, bool daily) {
   ArduinoJson::JsonDocument d;
@@ -259,26 +308,74 @@ class Weather : public feed::Feed {
   void sample() override {
     ent_now.clear();
     reads({});
-    place();
+    lat = 52.2, lon = -1.2;  // the docs place
     const double now = now_ms();
     put_data(wx::sample(now), now);
   }
   void fill() override {
+    const std::string src = source();
+    if (src == "open_meteo") { open_meteo(); return; }
+    om_have = false, om_reading = false, om_at = 0, om_fails = 0;
     place();
     const std::string ent = cfg()["weather"] | "";
     if (ent.rfind("weather.", 0) != 0) { ent_now.clear(); reads({}); put_empty(feed::ERROR); return; }  // no weather entity picked
     if (changed() || ent != ent_now) hours_got.clear(), days_got.clear(), fetched_hour = -1, ent_now = ent;
     if (back()) waiting_h = waiting_d = false;  // asks sent before Home Assistant dropped never come back
-    reads({{ent, ""}, {ent, "temperature"}, {ent, "apparent_temperature"}});  // the weather now, live
+    reads(with_home({{ent, ""}, {ent, "temperature"}, {ent, "apparent_temperature"}}));  // the weather now, live
     rebuild();
     if (changed() || back() || std::floor(now_ms() / HOUR) != fetched_hour || lv_tick_elaps(fetched_at) > 30 * 60000u ||
         ((hours_got.empty() || days_got.empty()) && lv_tick_elaps(fetched_at) > RETRY_MS)) fetch(ent);
   }
 
  private:
-  void place() {  // day or night: the sun at the feed's place
-    const char *la = cfg()["lat"] | "", *lo = cfg()["lon"] | "";
-    lat = *la ? strtod(la, nullptr) : 52.2, lon = *lo ? strtod(lo, nullptr) : -1.2;
+  bool om_have = false, om_reading = false;
+  uint32_t om_at = 0;  // the last read's start (lv ticks; 0 = none yet)
+  int om_fails = 0;    // reads failed in a row (the backoff)
+  Now om_now;
+  std::string om_key;  // the place the forecast is for
+  bool own() const { return *(cfg()["lat"] | "") && *(cfg()["lon"] | ""); }
+  std::vector<std::pair<std::string, std::string>> with_home(std::vector<std::pair<std::string, std::string>> rd) const {
+    if (!own()) rd.push_back({"zone.home", "latitude"}), rd.push_back({"zone.home", "longitude"});
+    return rd;
+  }
+  // home: the settings' place, else Home Assistant's (zone.home), else none (false; the sun then uses the docs place)
+  bool place() {
+    double la = NAN, lo = NAN;
+    if (own()) la = strtod(cfg()["lat"] | "", nullptr), lo = strtod(cfg()["lon"] | "", nullptr);
+    else if (const std::string *a = ha::get("zone.home", "latitude"), *b = ha::get("zone.home", "longitude"); a && b && !a->empty() && !b->empty())
+      la = strtod(a->c_str(), nullptr), lo = strtod(b->c_str(), nullptr);
+    const bool home = std::isfinite(la) && std::isfinite(lo) && std::fabs(la) <= 90 && std::fabs(lo) <= 180;
+    lat = home ? la : 52.2, lon = home ? lo : -1.2;
+    return home;
+  }
+  void open_meteo() {
+    ent_now.clear();
+    reads(with_home({}));
+    if (!place()) { put_empty(feed::ERROR); return; }  // nowhere to forecast for: not set up
+    char url[400];
+    snprintf(url, sizeof url,
+             "https://api.open-meteo.com/v1/forecast?latitude=%.2f&longitude=%.2f"
+             "&current=temperature_2m,apparent_temperature,weather_code,is_day"
+             "&hourly=temperature_2m,precipitation,weather_code&forecast_hours=13"
+             "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=6"
+             "&timezone=auto&timeformat=unixtime",
+             lat, lon);
+    if (changed() || om_key != url) om_have = false, om_at = 0, om_fails = 0, om_key = url, hours_got.clear(), days_got.clear();
+    // every 15 minutes while shown; after a failure 1, 2, 4, 8 minutes, then every 15 until a read works
+    const uint32_t every = om_fails ? std::min<uint32_t>(60000u << std::min(om_fails - 1, 4), 15 * 60000u) : 15 * 60000u;
+    if (!om_reading && (!om_at || lv_tick_elaps(om_at) >= every - 500)) {
+      om_reading = true;
+      om_at = lv_tick_get() ? lv_tick_get() : 1;
+      net::get(url, [this](bool ok, const std::string &body, const std::string &) {
+        om_reading = false;
+        Now n;
+        if (ok && read_open_meteo(body, n)) om_now = n, om_have = true, om_fails = 0;
+        else om_fails++;
+        run();
+      });
+    }
+    if (!om_have) { put_empty(om_fails ? feed::ERROR : feed::LOADING); return; }
+    assemble(keep(om_now.cond.c_str()), om_now.temp, om_now.feels);
   }
 };
 Weather F;

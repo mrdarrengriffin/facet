@@ -434,7 +434,7 @@ the workbench reads it through its `/api/wasm/web` allowlist) are written next t
 *Why:* a panel must work in a home without Home Assistant, and a home with an integration should not need a second
 account for the same data; one model per feed keeps every source looking the same. *Check:* the feed's functional tests
 per adapter (`tests/functional/overhead_screen.test.mjs`: adsb.lol on the fake web, FlightRadar24 and an ADS-B receiver
-on the fake Home Assistant); **TODO** lint: a contract screen's `source` options start with a direct or builtin source.
+on the fake Home Assistant; `weather_screen.test.mjs`: Open-Meteo on the fake web); **TODO** lint: a contract screen's `source` options start with a direct or builtin source.
 
 **C52. Every screen comes with its Home card.** A screen's spec carries `"card"`: the Card a Home page card for it
 shows (icon = the screen's icon top left, preview artwork top right, the value or words that matter now, the sub

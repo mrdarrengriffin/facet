@@ -11,6 +11,21 @@ const hourly = (t0, n, wetFrom = 99) => Array.from({ length: n }, (_, i) => ({
   datetime: new Date(t0 + i * 3600e3).toISOString(), condition: i >= wetFrom ? 'rainy' : 'cloudy', temperature: 10 + i, precipitation: i >= wetFrom ? 0.8 : 0 }));
 const wxComps = (t) => t.comps().filter((c) => c.ids.includes('weather_icon') && t.visible(c));
 async function open(t, params) { await t.mount('spec', { screen: 'weather', ...params }); return t; }
+// Open-Meteo on the fake web (FakeWeb): a recorded reply (api.open-meteo.com/v1/forecast, timeformat=unixtime), its times
+// moved to now; codes 3 overcast, 0 clear, 51 drizzle, 63 rain, 45 fog
+const OM = /^https:\/\/api\.open-meteo\.com\/v1\/forecast\?/;
+const omReply = ({ code = 3, day = 1, temp = 9.0, feels = 5.3, wetFrom = 9 } = {}) => {
+  const h0 = Math.floor(Date.now() / 3600e3) * 3600, d0 = Math.floor(Date.now() / 86400e3) * 86400;
+  return {
+    latitude: 52.19465, longitude: -1.209259, utc_offset_seconds: 0, timezone: 'GMT',
+    current: { time: h0, interval: 900, temperature_2m: temp, apparent_temperature: feels, weather_code: code, is_day: day },
+    hourly: { time: Array.from({ length: 13 }, (_, i) => h0 + i * 3600), temperature_2m: [9.2, 8.8, 8.2, 7.9, 7.6, 7.3, 7.4, 7.6, 7.7, 8.1, 7.8, 7.6, 8.0],
+      precipitation: Array.from({ length: 13 }, (_, i) => (i >= wetFrom && i < wetFrom + 2 ? 0.4 : 0)), weather_code: [3, 3, 3, 0, 0, 0, 1, 3, 3, 51, 51, 3, 3] },
+    daily: { time: Array.from({ length: 6 }, (_, i) => d0 + i * 86400), weather_code: [63, 51, 63, 51, 45, 61],
+      temperature_2m_max: [10.2, 9.8, 7.8, 7.1, 6.7, 8.6], temperature_2m_min: [2.5, 5.8, 5.5, -1.5, -3.3, 4.6], precipitation_sum: [19.8, 0.7, 8.25, 0.1, 0.0, 8.0] },
+  };
+};
+const home = (t) => { t.ha.s['zone.home'] = { '': 'zoning', latitude: '52.2', longitude: '-1.2' }; };
 const deck = (params) => ({ v: 2, rev: 9, start: 'h', pages: [
   { id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'w', size: 'l' }] },
   { id: 'w', kind: 'weather', params }] });
@@ -90,6 +105,42 @@ export default {
       const o = t.objs().find((x) => /^thunderstorms/i.test(x.text || '')), r = t.objs().find((x) => x.text === '6.8 mm'), one = t.b.S > 600 ? 32 : 20;
       t.ok(o && r, 'the condition and the rain, each its own line'); t.eq([o.h, r.h], [one, one], 'one body line tall each');
       t.eq(o.text, 'Thunderstorms', 'whole, no ellipsis'); t.ok(r.y >= o.y + o.h, 'the rain under the weather');
+    } },
+    { name: 'open_meteo: the panel reads Open-Meteo for Home Assistant\'s home: the weather now, eight hours, 5 days', async run(t) {
+      home(t); t.web.serve(OM, omReply());
+      await open(t, { source: 'open_meteo' });
+      const u = t.web.asked.filter((x) => OM.test(x));
+      t.eq(u.length, 1, 'one read');
+      t.ok(/latitude=52\.20&longitude=-1\.20&/.test(u[0]), `home, 2 decimals (${u[0]})`);
+      t.ok(/timeformat=unixtime/.test(u[0]) && /forecast_hours=13/.test(u[0]) && /forecast_days=6/.test(u[0]), 'only what the screen shows');
+      t.has(t.texts(), /^9°$/, 'the temperature now'); t.has(t.texts(), /^cloudy$/i, 'WMO 3 in words'); t.has(t.texts(), /feels 5°/i, 'feels like');
+      t.has(t.texts(), /high 10°, low 3°/i, 'today\'s high and low'); t.has(t.texts(), /^now$/i, 'the hours');
+      t.has(t.texts(), /dry for the next hour · rain at/i, 'the next wet hour');
+      t.eq(wxComps(t).length, 9, 'the hero icon + eight hour columns');
+      await t.mount('spec', { screen: 'weather_days', source: 'open_meteo' });
+      t.has(t.texts(), /^today$/i, 'Today'); t.has(t.texts(), /^rain · 19\.8 mm$|^rain$/i, 'WMO 63 in words'); t.has(t.texts(), /^fog$/i, 'WMO 45 in words');
+    } },
+    { name: 'open_meteo: a read every 15 minutes; a failure keeps the forecast and backs off; no home = Offline', async run(t) {
+      home(t); t.web.serve(OM, omReply({ code: 0, day: 0, temp: 4.4 }));
+      await open(t, { source: 'open_meteo', lat: '51.5', lon: '-0.12' });
+      const n = () => t.web.asked.filter((x) => OM.test(x)).length;
+      t.ok(/latitude=51\.50&longitude=-0\.12&/.test(t.web.asked.filter((x) => OM.test(x))[0]), 'the place set here wins over zone.home');
+      t.has(t.texts(), /^clear$/i, 'clear at night: Clear'); t.has(t.texts(), /^4°$/, 'the temperature');
+      t.wait(10 * 60000); t.eq(n(), 1, 'no read before 15 minutes');
+      t.web.status(OM, 'timeout'); t.wait(5 * 60000 + 1000);
+      t.eq(n(), 2, 'read again at 15 minutes'); t.has(t.texts(), /^4°$/, 'a failed read keeps the forecast');
+      t.wait(61000); t.eq(n(), 3, 'after a failure: a minute on');
+      t.wait(61000); t.eq(n(), 3, 'then two minutes'); t.wait(61000); t.eq(n(), 4, 'two minutes on');
+      t.web.serve(OM, omReply({ code: 63, temp: 7.6 })); t.wait(4 * 60000 + 1000);
+      t.has(t.texts(), /^8°$/, 'a good read: the new weather'); t.has(t.texts(), /^rain$/i, 'WMO 63');
+      t.ha.s['zone.home'] = { '': 'zoning', latitude: '', longitude: '' };
+      await open(t, { source: 'open_meteo' });
+      t.has(t.texts(), /^offline$/i, 'no home location: Offline');
+    } },
+    { name: 'open_meteo: an unreadable or failed first read = Offline, not a made-up forecast', async run(t) {
+      home(t); t.web.status(OM, 'timeout');
+      await open(t, { source: 'open_meteo' });
+      t.has(t.texts(), /^offline$/i, 'Offline'); t.has(t.texts(), /^--°$/, 'no temperature'); t.hasNot(t.texts(), /^now$/i, 'no hours');
     } },
     { name: 'Home card (C52): the weather now on the same feed, the real Weather icon as its preview', async run(t) {
       await t.device(deck({ source: 'sample' }));

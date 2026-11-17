@@ -10341,9 +10341,10 @@
    "layout": "center",
    "params": {
     "source": {
-     "about": "Where the weather comes from: a weather entity in Home Assistant (its forecast too), or a made-up forecast for previews.",
+     "about": "Where the weather comes from: Open-Meteo (a public forecast, no account or key: the panel reads it over the internet every 15 minutes while this screen or its Home card shows), a weather entity in Home Assistant (its forecast too), or a made-up forecast for previews.",
      "type": "select",
      "options": [
+      "open_meteo",
       "ha",
       "sample"
      ],
@@ -10356,6 +10357,16 @@
      "domain": "weather",
      "label": "Forecast",
      "default": "weather.forecast_home"
+    },
+    "lat": {
+     "about": "Your home's latitude in degrees, where Open-Meteo's forecast is for (and day or night for the icons). Empty (the default) = Home Assistant's home (zone.home); set it only for a panel without Home Assistant.",
+     "type": "hidden",
+     "default": ""
+    },
+    "lon": {
+     "about": "Your home's longitude in degrees. Empty (the default) = Home Assistant's home.",
+     "type": "hidden",
+     "default": ""
     }
    },
    "feeds": [
@@ -10368,9 +10379,10 @@
    "layout": "list",
    "params": {
     "source": {
-     "about": "Where the weather comes from: a weather entity in Home Assistant (its forecast too), or a made-up forecast for previews.",
+     "about": "Where the weather comes from: Open-Meteo (a public forecast, no account or key: the panel reads it over the internet every 15 minutes while this screen or its Home card shows), a weather entity in Home Assistant (its forecast too), or a made-up forecast for previews.",
      "type": "select",
      "options": [
+      "open_meteo",
       "ha",
       "sample"
      ],
@@ -10383,6 +10395,16 @@
      "domain": "weather",
      "label": "Forecast",
      "default": "weather.forecast_home"
+    },
+    "lat": {
+     "about": "Your home's latitude in degrees, where Open-Meteo's forecast is for (and day or night for the icons). Empty (the default) = Home Assistant's home (zone.home); set it only for a panel without Home Assistant.",
+     "type": "hidden",
+     "default": ""
+    },
+    "lon": {
+     "about": "Your home's longitude in degrees. Empty (the default) = Home Assistant's home.",
+     "type": "hidden",
+     "default": ""
     }
    },
    "feeds": [

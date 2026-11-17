@@ -5,6 +5,7 @@ export const prerender = false;
 /** The public APIs a feed's direct source may read (core/net.h): GET only, these hosts and paths only. */
 const READS = [
   /^https:\/\/api\.adsb\.lol\/v2\/point\/-?\d{1,2}(\.\d+)?\/-?\d{1,3}(\.\d+)?\/\d{1,3}$/,  // the flights feed (core/flights_source.cpp)
+  /^https:\/\/api\.open-meteo\.com\/v1\/forecast\?latitude=-?\d{1,2}\.\d{2}&longitude=-?\d{1,3}\.\d{2}&[a-z0-9_=,&]+$/,  // the weather feed (core/weather_source.cpp)
 ];
 
 /**

@@ -137,6 +137,18 @@
       "feed": "panel.weather",
       "sources": [
         {
+          "id": "open_meteo",
+          "kind": "direct",
+          "name": "Open-Meteo",
+          "line": "public forecast · no key · over the internet",
+          "adapter": "open_meteo",
+          "setup": [
+            "Home Assistant's home location (zone.home), or Latitude and Longitude in the deck",
+            "internet access (no account, no key)"
+          ],
+          "about": "GET https://api.open-meteo.com/v1/forecast for home (2 decimals, about 1 km) over the internet every 15 minutes while the screen or its card shows (after a failure 1, 2, 4, 8 min, then every 15 min): the weather now, the next 13 hours and 6 days, about 2 KB. Data: CC BY 4.0 (Open-Meteo.com); free for non-commercial use under 10,000 calls a day, no key. Temperatures in °C."
+        },
+        {
           "id": "wx_met",
           "kind": "ha",
           "name": "Met.no",
@@ -281,12 +293,6 @@
               "domain": "weather"
             }
           }
-        },
-        {
-          "id": "open_meteo",
-          "kind": "direct",
-          "name": "Open-Meteo, called by the panel itself (planned)",
-          "adapter": "open_meteo"
         },
         {
           "id": "sample",

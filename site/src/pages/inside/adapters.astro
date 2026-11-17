@@ -78,7 +78,7 @@ const models: { screen: string; feed: string; model: string; fields: [string, st
     ],
   },
   {
-    screen: 'Weather', feed: 'panel.weather', model: 'wx::Data (core/weather.h)', adapters: 'ha, sample',
+    screen: 'Weather', feed: 'panel.weather', model: 'wx::Data (core/weather.h)', adapters: 'open_meteo, ha, sample',
     fields: [
       ['condition', "Home Assistant's condition id (partlycloudy, rainy ...)"], ['temp, feels', 'temperature and apparent temperature, °C'],
       ['hourly[12]', '{t (ms), condition, temp, precip mm}'], ['daily[5]', '{t, condition, hi, lo, precip}'],
