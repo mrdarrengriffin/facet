@@ -264,5 +264,33 @@ export default {
       const c = t.part('card');
       t.ok(c, 'the page card'); t.ok(c.texts.some((x) => /harbour lights/i.test(x)), 'the track on the card');
     } },
+    { name: 'ha (#224): an unavailable speaker is last and cannot be picked; a picked speaker that goes drops back to Auto, which shows the one playing', async run(t) {
+      const F = (a) => t.b.test('ha_get', `panel.media|${a}`);
+      t.ha.s['media_player.test_a_voice'] = { '': 'unavailable', friendly_name: 'Attic voice' };  // first by name
+      t.ha.s['media_player.test_lounge'] = { '': 'playing', friendly_name: 'Lounge', media_title: 'Radio Song', entity_picture: '/api/p?x' };
+      t.ha.s['media_player.test_den'] = { '': 'idle', friendly_name: 'Den' };
+      await linked(t, { source: 'ha' });
+      const rows = JSON.parse(F('speakers')).filter((r) => r.id !== 'auto');
+      t.eq(rows.at(-1).name, 'Attic voice', `unavailable last: ${rows.map((r) => r.name)}`);
+      t.eq(rows.at(-1).state, 'disabled', 'greyed, not pickable');
+      t.tap(t.comps().find((c) => c.ids.includes('icon_button') && c.y < 100 && c.x > t.b.S / 2));
+      t.tap(t.find(/^attic voice$/i)); t.wait(400);
+      t.eq(F('title'), 'Radio Song', 'a tap on it changes nothing: Auto still shows the one playing');
+      t.eq(F('sheet'), 'open', 'the sheet stays open');
+      t.tap(t.find(/^den$/i)); t.wait(400);
+      t.eq(F('speaker'), 'Den', 'Den picked');
+      t.ha.set('media_player.test_den', 'unavailable', {}); t.wait(400); t.b.tick(8); t.ha.push(); t.b.settle(400);
+      t.eq(F('title'), 'Radio Song', 'Den went: back to Auto, the one playing');
+      t.ok(JSON.parse(F('speakers'))[0].selected, 'Auto is on again');
+    } },
+    { name: 'ha (#224): the card and the screen show the speaker playing, not a paused player Home Assistant lists first', async run(t) {
+      t.ha.s['media_player.a_spotify'] = { '': 'paused', friendly_name: 'Spotify', media_title: 'Paused Song', entity_picture: '/api/s?x' };
+      t.ha.s['media_player.test_lounge'] = { '': 'playing', friendly_name: 'Lounge', media_title: 'Radio Song' };
+      await linked(t, { source: 'ha' }, 'h');
+      t.ok(t.part('card').texts.some((x) => /radio song/i.test(x)), `the card: ${t.part('card').texts}`);
+      t.show('media'); t.wait(600);
+      t.has(t.texts(), /^radio song$/i, 'the screen: the same');
+      t.eq(t.b.test('ha_get', 'panel.media|speaker'), 'Lounge', 'named for the speaker playing');
+    } },
   ],
 };

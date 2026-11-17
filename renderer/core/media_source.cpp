@@ -137,9 +137,13 @@ void put_shown(const Shown &m) {
   put("player", m.state);
   put_state(gone ? feed::MISSING : m.state == "unavailable" ? feed::UNAVAILABLE : down ? feed::ERROR : m.state == "loading" ? feed::LOADING : feed::OK);
 }
-std::string row(const std::string &id, const std::string &name, const std::string &status, const char *icon, bool working, bool sel) {
+std::string row(const std::string &id, const std::string &name, const std::string &status, const char *icon, bool working, bool sel, bool off = false) {
   return "{\"id\":\"" + esc(id) + "\",\"name\":\"" + esc(name) + "\",\"status\":\"" + esc(status) + "\",\"icon\":\"" + icon +
-         "\",\"tone\":\"" + (working ? "working" : "dim") + "\",\"selected\":" + (sel ? "true" : "false") + "}";
+         "\",\"tone\":\"" + (working ? "working" : "dim") + "\",\"selected\":" + (sel ? "true" : "false") + (off ? ",\"state\":\"disabled\"" : "") + "}";
+}
+bool gone(const std::string &e) {  // a player with no state now (unavailable, or not there): never picked, never followed (#224)
+  const std::string *st = ha::get(e);
+  return !st || st->empty() || *st == "unavailable";
 }
 
 // ---- adapter: sample
@@ -174,17 +178,22 @@ void sample_now() {
 // ---- adapters: ha (every player), an integration's players (music_assistant, cast, sonos: the source names the
 // platform), spotify (one Spotify account player; its speakers = the Spotify Connect devices in its source_list)
 bool is_spotify() { return S().src == "spotify"; }
-std::string current() {  // the player shown: a pick, else Auto's target, else the first speaker
+std::string current() {  // the player shown: a pick, else Auto's target, else the first speaker in the sheet's order
   St &s = S();
   if (is_spotify()) return s.player;
   if (!s.follow && !s.picked.empty()) return s.picked;
   if (!s.follow_last.empty()) return s.follow_last;
-  return s.player;
+  // nothing played yet: the top of the sorted list (order(): playing first, unavailable last), not the first player
+  // Home Assistant listed (a paused Spotify player showed on the card while a speaker played, #224)
+  return s.speakers.empty() ? s.player : s.speakers[0];
 }
 void want_all(const std::string &e) { for (const char *a : ATTRS) ha::want(e, a); }
 void follow_now() {  // Auto: the first speaker that plays (they are in that order already)
   St &s = S();
-  if (!s.follow || is_spotify()) return;
+  if (is_spotify()) return;
+  if (!s.follow && !s.picked.empty() && gone(s.picked)) s.follow = true, s.picked.clear();  // a picked player that goes: back to Auto (#224)
+  if (!s.follow) return;
+  if (!s.follow_last.empty() && gone(s.follow_last)) s.follow_last.clear();  // Auto lets go of a player that went
   for (const std::string &e : s.speakers) {
     const std::string *st = ha::get(e);
     if (st && *st == "playing") {
@@ -218,6 +227,7 @@ void order() {
   std::stable_sort(s.speakers.begin(), s.speakers.end(), [&](const std::string &x, const std::string &y) {
     if (on(x) != on(y)) return on(x);
     if (on(x) && pic(x) != pic(y)) return pic(x);
+    if (gone(x) != gone(y)) return gone(y);  // unavailable last (greyed, not pickable)
     if (rank(x) != rank(y)) return rank(x) < rank(y);
     return name_of(x) < name_of(y);
   });
@@ -269,7 +279,7 @@ void rebuild() {
       auto ar = s.area_name.find(p);
       const std::string where = ar == s.area_name.end() ? "" : ar->second;
       const std::string what = on && pt && !pt->empty() ? "playing · " + *pt : ps ? *ps : "";
-      l += "," + row(p, name_of(p), where.empty() ? what : what.empty() ? where : where + " · " + what, "speaker", on, !s.follow && p == e);
+      l += "," + row(p, name_of(p), where.empty() ? what : what.empty() ? where : where + " · " + what, "speaker", on, !s.follow && p == e, gone(p));
     }
   }
   put("speakers", l + "]");
@@ -395,6 +405,7 @@ const char *control(const std::string &v, std::string *svc, std::string *ent, st
     if (id == "auto") s.follow = true, s.follow_last.clear();
     else if (ha) {
       if (std::find(s.speakers.begin(), s.speakers.end(), id) == s.speakers.end()) return "not one of the speakers";
+      if (gone(id)) return "the speaker is unavailable";
       s.follow = false, s.picked = id;
       want_all(id);
     } else {
