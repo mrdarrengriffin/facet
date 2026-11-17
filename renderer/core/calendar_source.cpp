@@ -4,7 +4,9 @@
 //   state        ok | loading (no calendar has answered yet) | error (none picked) | missing (Home Assistant has none
 //                of the calendars) | unavailable (none of them has a state now, at least one is there); one calendar
 //                missing or unavailable among others that answer: ok, its row in the calendars sheet says the word
-//   hero_n       the next event's when: "16:50" (today), "Now" (running), "Tmrw", "Thu", "24 Oct"; "--" for none
+//   hero_n       the next event's when: "16:50" (today), "Now" (running), "Tmrw", "Thu 13", "24 Oct"; "--" for none;
+//                hero_line starts "Next · " when it is not today. Big day "today" (params.big_day): with nothing
+//                else today, today's "Mon 9" + "Nothing else today", the line "Next: <title> · Fri 13 18:00"
 //   hero_label   its title as written ("Nothing coming up" / feed::words: "Loading", "Offline", "Not found",
 //                "Unavailable"); hero_line "until 17:50 · Larkfield
 //                studio · Family" (the parts it knows); hero_accent "on" while it runs or starts within 15 minutes
@@ -65,6 +67,7 @@ std::set<std::string> hidden;      // calendars turned off (ids)
 std::set<std::string> answered_ok; // calendars whose get_events reply landed
 int waiting = 0;
 double fixed = 0, from_ms = 0, to_ms = 0;  // the days fetched
+bool today_only = false;  // the screen's Big day option (params.big_day): today = today's date until midnight (#181)
 long fetched_day = -1;
 uint32_t fetched_at = 0;
 int my = -1, mm = 0;  // the month shown (-1 = this month)
@@ -137,11 +140,20 @@ void event_row(ArduinoJson::JsonArray arr, const ag::Event &x, double now) {
 }
 
 // the feed from every event known (all calendars; the hidden ones drop out here)
+std::string next_when(const ag::Event &e, double now) {  // "Tomorrow 09:00", "Fri 13 18:00", "24 Oct", all day: the day alone
+  const long dd = ag::day_diff(e.start, now);
+  const std::string day = dd == 1 ? "Tomorrow" : dd < 7 ? ag::wd(e.start) + " " + std::to_string(ag::mday(e.start)) : ag::dm(e.start);
+  return e.all_day ? day : day + " " + ag::hm(e.start);
+}
 void put_events(const std::vector<ag::Event> &all, double now) {
   auto &put = put_f;
   std::vector<ag::Event> ev;
   for (const ag::Event &e : all) if (on(e.calendar)) ev.push_back(e);
   sort_events(ev);
+  // one row for an event two calendars both have (the same start, end and title; the first calendar's) (#181)
+  ev.erase(std::unique(ev.begin(), ev.end(), [](const ag::Event &a, const ag::Event &b) {
+    return a.start == b.start && a.end == b.end && a.all_day == b.all_day && a.summary == b.summary;
+  }), ev.end());
   put_state(feed::OK);
   // hero (+ the card): the running or next event
   const ag::Event *e = ag::next(ev, now);
@@ -149,15 +161,22 @@ void put_events(const std::vector<ag::Event> &all, double now) {
     put("hero_n", "--"), put("hero_label", "Nothing coming up"), put("hero_line", "in the next 14 days"), put("hero_accent", "off");
     put("card_n", "--");
     put("card", "Nothing coming up");
+  } else if (today_only && !ag::running(*e, now) && ag::day_diff(e->start, now) > 0) {
+    // today only: the big day stays today's; the next event is named on the line
+    const std::string day = ag::wd(now) + " " + std::to_string(ag::mday(now));
+    put("hero_n", day), put("hero_label", "Nothing else today");
+    put("hero_line", "Next: " + e->summary + " \xC2\xB7 " + next_when(*e, now)), put("hero_accent", "off");
+    put("card_n", ag::weekday(now) + " " + std::to_string(ag::mday(now))), put("card", "Nothing else today");
   } else {
     const long dd = ag::day_diff(e->start, now);
     const bool run = ag::running(*e, now);
     std::string line = run ? "until " + ag::hm(e->end) : dd == 0 ? "today" : e->all_day ? ag::time_text(*e) : ag::hm(e->start);
+    if (!run && dd > 0) line = "Next \xC2\xB7 " + line;  // not today: it reads as the next event's day, not today's (#181)
     if (!e->location.empty()) line += " \xC2\xB7 " + e->location;
     if (const Cal *c = cal_of(e->calendar)) line += " \xC2\xB7 " + c->name;
-    const std::string n = run ? "Now" : dd == 0 && !e->all_day ? ag::hm(e->start) : dd == 1 ? "Tmrw" : dd < 7 ? ag::wd(e->start) : ag::dm(e->start);
+    const std::string n = run ? "Now" : dd == 0 && !e->all_day ? ag::hm(e->start) : dd == 1 ? "Tmrw" : dd < 7 ? ag::wd(e->start) + " " + std::to_string(ag::mday(e->start)) : ag::dm(e->start);
     put("hero_n", n), put("hero_label", e->summary), put("hero_line", line);
-    put("card_n", run ? "Now" : dd == 0 && !e->all_day ? ag::hm(e->start) : dd == 1 ? "Tomorrow" : dd < 7 ? ag::weekday(e->start) : ag::dm(e->start));
+    put("card_n", run ? "Now" : dd == 0 && !e->all_day ? ag::hm(e->start) : dd == 1 ? "Tomorrow" : dd < 7 ? ag::weekday(e->start) + " " + std::to_string(ag::mday(e->start)) : ag::dm(e->start));
     put("hero_accent", run || e->start - now <= ag::SOON ? "on" : "off");
     put("card", e->summary);
   }
@@ -375,6 +394,7 @@ class Calendar : public feed::Feed {
  protected:
   void settings() {
     const char *fx_ = cfg()["now"] | "";
+    today_only = !strcmp(cfg()["big_day"] | "next", "today");
     fixed = *fx_ ? strtod(fx_, nullptr) : 0;
     if (changed()) { my = -1, sel = 0, sheet.clear(); }
   }

@@ -10067,6 +10067,16 @@
      "label": "View",
      "default": "agenda"
     },
+    "big_day": {
+     "about": "What the big day shows once today's events are over: next = the next event's day (\"Next\" on its line); today = today's date with \"Nothing else today\" and the next event on its line.",
+     "type": "select",
+     "options": [
+      "next",
+      "today"
+     ],
+     "label": "Big day",
+     "default": "next"
+    },
     "now": {
      "about": "For tests only: a fixed time in milliseconds for the made-up fortnight. Leave empty for the real time.",
      "type": "hidden",

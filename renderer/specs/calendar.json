@@ -9,10 +9,11 @@
   "source": {"about": "Where the events come from: calendars in Home Assistant, or a made-up fortnight for previews.", "type": "select", "options": ["ha", "sample"], "label": "Source", "default": "ha"},
   "hidden": {"about": "The calendars turned off on the screen (the calendars sheet), as ids. Every other calendar in Home Assistant shows, each in its own colour.", "type": "hidden", "default": ""},
   "view": {"about": "Which view the screen opens on: agenda lists the next event and the days after it; month shows six weeks of days with their events.", "type": "select", "options": ["agenda", "month"], "label": "View", "default": "agenda"},
+  "big_day": {"about": "What the big day shows once today's events are over: next = the next event's day (\"Next\" on its line); today = today's date with \"Nothing else today\" and the next event on its line.", "type": "select", "options": ["next", "today"], "label": "Big day", "default": "next"},
   "now": {"about": "For tests only: a fixed time in milliseconds for the made-up fortnight. Leave empty for the real time.", "type": "hidden", "default": ""}
  },
  "feeds": {
-  "panel.calendar": {"source": "$source", "hidden": "$hidden", "now": "$now"}
+  "panel.calendar": {"source": "$source", "hidden": "$hidden", "big_day": "$big_day", "now": "$now"}
  },
  "card": {
   "icon": "calendar",
