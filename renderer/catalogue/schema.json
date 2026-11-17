@@ -10067,14 +10067,14 @@
      "label": "View",
      "default": "agenda"
     },
-    "big_day": {
-     "about": "What the big day shows once today's events are over: next = the next event's day (\"Next\" on its line); today = today's date with \"Nothing else today\" and the next event on its line.",
+    "highlight": {
+     "about": "What the highlight (the big date at the top, and the Home card) shows once today's events are over: next = the next event's day (\"Next\" on its line); today = today's date with \"Nothing else today\" and the next event on its line.",
      "type": "select",
      "options": [
       "next",
       "today"
      ],
-     "label": "Big day",
+     "label": "Highlight",
      "default": "next"
     },
     "now": {

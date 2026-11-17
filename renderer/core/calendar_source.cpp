@@ -5,7 +5,7 @@
 //                of the calendars) | unavailable (none of them has a state now, at least one is there); one calendar
 //                missing or unavailable among others that answer: ok, its row in the calendars sheet says the word
 //   hero_n       the next event's when: "16:50" (today), "Now" (running), "Tmrw", "Thu 13", "24 Oct"; "--" for none;
-//                hero_line starts "Next · " when it is not today. Big day "today" (params.big_day): with nothing
+//                hero_line starts "Next · " when it is not today. Highlight "today" (params.highlight): with nothing
 //                else today, today's "Mon 9" + "Nothing else today", the line "Next: <title> · Fri 13 18:00"
 //   hero_label   its title as written ("Nothing coming up" / feed::words: "Loading", "Offline", "Not found",
 //                "Unavailable"); hero_line "until 17:50 · Larkfield
@@ -67,7 +67,7 @@ std::set<std::string> hidden;      // calendars turned off (ids)
 std::set<std::string> answered_ok; // calendars whose get_events reply landed
 int waiting = 0;
 double fixed = 0, from_ms = 0, to_ms = 0;  // the days fetched
-bool today_only = false;  // the screen's Big day option (params.big_day): today = today's date until midnight (#181)
+bool today_only = false;  // the screen's Highlight option (params.highlight): today = today's date until midnight (#181)
 long fetched_day = -1;
 uint32_t fetched_at = 0;
 int my = -1, mm = 0;  // the month shown (-1 = this month)
@@ -162,7 +162,7 @@ void put_events(const std::vector<ag::Event> &all, double now) {
     put("card_n", "--");
     put("card", "Nothing coming up");
   } else if (today_only && !ag::running(*e, now) && ag::day_diff(e->start, now) > 0) {
-    // today only: the big day stays today's; the next event is named on the line
+    // today only: the highlight stays today's; the next event is named on the line
     const std::string day = ag::wd(now) + " " + std::to_string(ag::mday(now));
     put("hero_n", day), put("hero_label", "Nothing else today");
     put("hero_line", "Next: " + e->summary + " \xC2\xB7 " + next_when(*e, now)), put("hero_accent", "off");
@@ -394,7 +394,7 @@ class Calendar : public feed::Feed {
  protected:
   void settings() {
     const char *fx_ = cfg()["now"] | "";
-    today_only = !strcmp(cfg()["big_day"] | "next", "today");
+    today_only = !strcmp(cfg()["highlight"] | "next", "today");
     fixed = *fx_ ? strtod(fx_, nullptr) : 0;
     if (changed()) { my = -1, sel = 0, sheet.clear(); }
   }

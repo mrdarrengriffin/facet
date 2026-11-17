@@ -101,7 +101,7 @@ export default {
       t.ok(c && c.texts.includes('Wednesday 4'), `the card: ${JSON.stringify(c?.texts)}`);
       t.ok(!c.texts.some((s) => /^Wed\b/.test(s) && !/^Wednesday/.test(s)), 'never the short form on the card');
     } },
-    { name: 'Monday evening, today over, next event Friday (#181): "Fri 6" + "Next ·" (default); big day today: "Mon 2" + Nothing else today; one row for an event in two calendars', async run(t) {
+    { name: 'Monday evening, today over, next event Friday (#181): "Fri 6" + "Next ·" (default); highlight today: "Mon 2" + Nothing else today; one row for an event in two calendars', async run(t) {
       const mon = Date.UTC(2026, 10, 2, 20), fri = Date.UTC(2026, 10, 6, 18);  // Monday 2 Nov 2026 20:00, the event Friday 6 Nov 18:00
       const ev = { start: iso(fri), end: iso(fri + 3600e3), summary: 'Saving Session' };
       for (const [c, n] of [[C1, 'Family'], [C2, 'Work']]) t.ha.s[c] = { '': 'off', friendly_name: n, message: 'Saving Session', start_time: '2026-11-06 18:00:00', end_time: '2026-11-06 19:00:00', all_day: 'false' };
@@ -110,16 +110,16 @@ export default {
       const f = (a) => t.b.test('ha_get', `panel.calendar|${a}`);
       for (const [rev, big] of [[9, 'next'], [10, 'today']]) {
         await t.device({ v: 2, rev, start: 'c', pages: [{ id: 'h', kind: 'home', name: 'Test', cards: [{ t: 'page', page: 'c', size: 'm' }] },
-          { id: 'c', kind: 'calendar', params: { source: 'ha', now: String(mon), big_day: big } }] });
+          { id: 'c', kind: 'calendar', params: { source: 'ha', now: String(mon), highlight: big } }] });
         t.b.spec('act', { do: 'ha.connect', url: 'http://ha.test:8123', token: 'abcdefgh1234' }); t.b.tick(8); t.b.settle(600);
         for (let i = 0; i < 2; i++) { t.wait(61000); t.b.tick(8); t.ha.push(); t.b.settle(400); }
         if (big === 'next') {
-          t.eq(f('hero_n'), 'Fri 6', 'the big day: the next event\'s day with its date');
+          t.eq(f('hero_n'), 'Fri 6', 'the highlight: the next event\'s day with its date');
           t.ok(/^Next · /.test(f('hero_line')), `its line says Next: ${f('hero_line')}`);
           t.eq(f('card_n'), 'Friday 6', 'the card: the day in full with its date');
           t.eq((JSON.parse(f('agenda') || '[]')).filter((r) => r.kind === 'event').length, 1, 'the event two calendars share: one row');
         } else {
-          t.eq(f('hero_n'), 'Mon 2', 'big day today: today\'s date');
+          t.eq(f('hero_n'), 'Mon 2', 'highlight today: today\'s date');
           t.eq(f('hero_label'), 'Nothing else today', 'nothing else today');
           t.eq(f('card_n'), 'Monday 2', 'the card: today in full');
           t.ok(/^Next: Saving Session · Fri 6 18:00$/.test(f('hero_line')), `the next event on the line: ${f('hero_line')}`);
