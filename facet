@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# ./facet: build and check Facet from the repo root (CONTRIBUTING.md "Building & testing").
+#   ./facet build wasm [1x|1.5x]         the WASM renderer (both densities by default) -> $FW_OUT
+#   ./facet build firmware <board>       a panel's firmware (esphome/build.sh; boards: esphome/facet-<board>.yaml)
+#   ./facet check quick [--ids a,b]      before a commit: build 1.5x, then the quick checks (+ the given ids' tests)
+#   ./facet check full [--ids a,b]       CI and before a release: build both densities, then every check
+#   ./facet check nightly                overnight: full, then the slow checks (ASan, fuzz, lag, bench)
+#   ./facet check <level> --no-build     check the build that is already there
+#   ./facet help                         this list
+# One PASS / FAIL line per step with its time, then a summary and the log folder. The same steps as
+# renderer/build.sh + renderer/check.sh by hand: nothing extra runs. Optional settings in local.env (untracked):
+# FW_OUT, FW_CACHE (where builds and caches go), FACET_BUILD_WRAP (a command to run builds under, e.g. a job queue).
+set -uo pipefail
+ROOT=$(cd "$(dirname "$0")" && pwd)
+R=$ROOT/renderer
+[ -f "$ROOT/local.env" ] && . "$ROOT/local.env"
+export FW_OUT=${FW_OUT:-$R/out} FW_CACHE=${FW_CACHE:-$R/.cache}
+WRAP=${FACET_BUILD_WRAP:-}
+
+usage() { sed -n 2,12p "$0" | sed 's/^# \{0,1\}//'; }
+deps() {  # the node tools the builds and checks use, once per clone
+  for d in renderer/tools workbench; do
+    [ -d "$ROOT/$d/node_modules" ] || { echo "npm ci in $d (first run)"; (cd "$ROOT/$d" && npm ci --silent) || exit 1; }
+  done
+}
+t_all=$SECONDS
+step() {  # step <name> <log> <cmd...>: one line, the error lines on failure
+  local name=$1 log=$2; shift 2; local t0=$SECONDS
+  "$@" >"$log" 2>&1; local rc=$?
+  if [ $rc = 0 ]; then echo "PASS $name ($((SECONDS - t0))s)"; return 0; fi
+  echo "FAIL $name ($((SECONDS - t0))s) log: $log"
+  grep -iE 'error' "$log" | head -12 | cut -c1-200 | sed 's/^/  /'
+  return 1
+}
+build_wasm() {  # build_wasm <log dir> [den...]
+  local log=$1; shift
+  step "build ${*:-1.5x 1x}" "$log/build.log" bash -c "cd '$R' && $WRAP ./build.sh $*"
+}
+
+cmd=${1:-help}; shift || true
+case "$cmd" in
+  help|-h|--help) usage ;;
+  build)
+    what=${1:-}; shift || true
+    LOG=$FW_CACHE/runs/$(date +%Y%m%d-%H%M%S)-build; mkdir -p "$LOG"
+    deps
+    case "$what" in
+      wasm) build_wasm "$LOG" "$@" || { echo "BUILD: FAILED (logs $LOG)"; exit 1; } ;;
+      firmware)
+        board=${1:-}; [ -n "$board" ] || { echo "./facet build firmware <board>: $(ls "$ROOT"/esphome/facet-*.yaml | sed 's|.*/facet-||; s|\.yaml||' | tr '\n' ' ')"; exit 2; }
+        [ -f "$ROOT/esphome/facet-$board.yaml" ] || { echo "no board $board (esphome/facet-$board.yaml)"; exit 2; }
+        exec "$ROOT/esphome/build.sh" "$board" ;;
+      *) usage; exit 2 ;;
+    esac
+    echo "BUILD: done ($((SECONDS - t_all))s) -> $FW_OUT" ;;
+  check)
+    level=${1:-}; shift || true
+    nobuild="" pass=()
+    while [ $# -gt 0 ]; do case "$1" in --no-build) nobuild=1 ;; --ids) pass+=(--ids "$2"); shift ;; *) echo "unknown arg $1"; exit 2 ;; esac; shift; done
+    case "$level" in quick) tier=fast dens=1.5x ;; full) tier=gate dens="" ;; nightly) tier=gate dens="" ;; *) usage; exit 2 ;; esac
+    [ "$level" = nightly ] && [ ${#pass[@]} -gt 0 ] && { echo "nightly checks everything (no --ids)"; exit 2; }
+    LOG=$FW_CACHE/runs/$(date +%Y%m%d-%H%M%S)-$level; mkdir -p "$LOG"; export CHECK_LOG=$LOG
+    deps
+    rc=0
+    if [ -z "$nobuild" ]; then build_wasm "$LOG" $dens || { echo "CHECK $level: FAILED at the build ($((SECONDS - t_all))s, logs $LOG)"; exit 1; }; fi
+    "$R/check.sh" "$tier" "${pass[@]}" | grep -v '^CHECK '; [ "${PIPESTATUS[0]}" = 0 ] || rc=1
+    if [ "$level" = nightly ]; then (cd "$R" && $WRAP ./check.sh nightly) | grep -v '^CHECK '; [ "${PIPESTATUS[0]}" = 0 ] || rc=1; fi
+    [ $rc = 0 ] && echo "CHECK $level: all green ($((SECONDS - t_all))s, logs $LOG)" || echo "CHECK $level: FAILED ($((SECONDS - t_all))s, logs $LOG)"
+    exit $rc ;;
+  *) usage; exit 2 ;;
+esac
