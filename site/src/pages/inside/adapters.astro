@@ -20,6 +20,7 @@ const headings: Heading[] = [
   { depth: 2, slug: 'home-assistant', text: 'Home Assistant adapters' },
   { depth: 3, slug: 'declare', text: 'Declaring what it needs' },
   { depth: 3, slug: 'naming', text: 'Naming in the Source list' },
+  { depth: 3, slug: 'default', text: 'The default source' },
   { depth: 2, slug: 'direct', text: 'Public (direct) adapters' },
   { depth: 2, slug: 'testing', text: 'Testing' },
   { depth: 2, slug: 'models', text: "Each screen's model" },
@@ -224,7 +225,7 @@ node renderer/tools/functional.mjs --ids media_screen,feeds --den 1.5x`} />
   <div class="callout">
     <span class="dot" aria-hidden="true"></span>
     <p>
-      Since 0.5 (<a href={`${REPO}/issues/156`}>#156</a>) an integration source whose integration Home Assistant
+      Since 0.6 (<a href={`${REPO}/issues/156`}>#156</a>) an integration source whose integration Home Assistant
       does not have stays in the list, greyed, saying
       <strong>Not set up in Home Assistant</strong>. That check reads <code>detect</code>, so declare it fully.
     </p>
@@ -239,10 +240,19 @@ node renderer/tools/functional.mjs --ids media_screen,feeds --den 1.5x`} />
     (<a href={`${REPO}/issues/129`}>#129</a>).
   </p>
 
+  <h3 id="default">The default source</h3>
+  <p>
+    A screen's default is its public source, listed first. A screen whose Home Assistant data most homes already have
+    may default to <code>auto</code> instead (Weather, <a href={`${REPO}/issues/217`}>#217</a>): the Home Assistant
+    source when Home Assistant has an entity of that kind, else the public one. A source the person picked always wins
+    (<a href={src('renderer/core/sources.h')}><code>core/sources.h</code></a> <code>auto_adapter</code>).
+  </p>
+
   <h2 id="direct">Public (direct) adapters</h2>
   <p>
     The panel reads a public source itself, through <a href={src('renderer/core/net.h')}><code>core/net.h</code></a>:
-    <code>fw::net::get(url, done)</code>, HTTPS GET only. The rules (C51b), as the adsb.lol adapter keeps them:
+    <code>fw::net::get(url, done)</code>, HTTPS GET only (two to copy: adsb.lol for Overhead, Open-Meteo for Weather in
+    <a href={src('renderer/core/weather_source.cpp')}><code>core/weather_source.cpp</code></a>). The rules (C51b), as the adsb.lol adapter keeps them:
   </p>
   <ul>
     <li><strong>No account, no key.</strong> A source that needs one is not a direct source.</li>
