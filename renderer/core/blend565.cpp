@@ -3,8 +3,8 @@
 // opacity) with 32 levels and rounds each channel down, so between two near-greys green moves a step before red and
 // blue do: a fading white card over the light canvas sat at (247,251,247), mint, and fading text turned greenish.
 // Here the mix of two near-greys (each colour's channels within GREY of each other) is worked out in 8 bits and
-// rounded to the RGB565 colour (each channel one step up or down) that keeps the true colour's tint (green against
-// red, green against blue; never greener than it) at the brightness LVGL's mix gives; any other pair is mixed as LVGL does. The
+// rounded to RGB565: red and blue to their nearest level, green to the level that keeps the true colour's tint
+// (green against red and against blue; never greener than it); any other pair is mixed as LVGL does. The
 // build links it in place of LVGL's own (-Wl,--wrap=lv_color_16_16_mix: renderer/build.sh, tools/asan.sh,
 // esphome/packages/workbench.yaml), so LVGL itself stays as released. Check: tests/functional/fade_tint.test.mjs.
 #include <cstdint>
@@ -37,26 +37,18 @@ extern "C" uint16_t __wrap_lv_color_16_16_mix(uint16_t c1, uint16_t c2, uint8_t 
   if (!grey(fr, fg, fb) || !grey(br, bgr, bb)) return lvgl_mix(c1, c2, mix);
   const int m = mix, n = 255 - m;
   const int r = div255(fr * m + br * n), g = div255(fg * m + bgr * n), b = div255(fb * m + bb * n);  // the true colour
-  const int rl = r * 31 / 255, gl = g * 63 / 255, bl = b * 31 / 255;
-  // the brightness LVGL's own mix gives (its rounding down keeps thin anti-aliased lines as dark as the contrast
-  // rules measured them): only the tint changes
-  const uint16_t lv = lvgl_mix(c1, c2, mix);
-  const int lum = e5(lv >> 11) + e6((lv >> 5) & 63) + e5(lv & 31);
-  int best = 1 << 30;
-  uint16_t out = c2;
-  // each channel: one step either side of the true colour, and LVGL's own level (a thin line's darkest edge)
-  const int lr = lv >> 11, lg = (lv >> 5) & 63, lb = lv & 31;
-  const int r0 = rl < lr ? rl : lr, r1 = rl + 1 > lr ? rl + 1 : lr, g0 = gl < lg ? gl : lg, g1 = gl + 1 > lg ? gl + 1 : lg;
-  const int b0 = bl < lb ? bl : lb, b1 = bl + 1 > lb ? bl + 1 : lb;
-  for (int R = r0; R <= r1 && R <= 31; R++)
-    for (int G = g0; G <= g1 && G <= 63; G++)
-      for (int B = b0; B <= b1 && B <= 31; B++) {
-        const int er = e5(R), eg = e6(G), eb = e5(B);
-        // the tint first (x3: green against red and against blue), never greener than the true colour (x30), then
-        // the brightness
-        const int over = (eg - (er > eb ? er : eb)) - (g - (r > b ? r : b));
-        const int err = 3 * (abs((eg - er) - (g - r)) + abs((eg - eb) - (g - b))) + 30 * (over > 0 ? over : 0) + abs(er + eg + eb - lum);
-        if (err < best) best = err, out = (uint16_t) (R << 11 | G << 5 | B);
-      }
+  // red and blue rounded to their 5-bit level; green the 6-bit level near the true colour (one below, at, one above)
+  // that keeps its tint against red and against blue (x3), never greener than it (x30), then nearest. Three tries, so
+  // a full-screen fade or a long scroll of anti-aliased text costs little more than LVGL's own mix
+  const int R = (r * 31 + 127) / 255, B = (b * 31 + 127) / 255, er = e5(R), eb = e5(B), hi = er > eb ? er : eb;
+  const int gl = g * 63 / 255, tint = g - (r > b ? r : b);
+  int best = 1 << 30, G = gl;
+  for (int k = gl - 1; k <= gl + 1; k++) {
+    if (k < 0 || k > 63) continue;
+    const int eg = e6(k), over = (eg - hi) - tint;
+    const int err = 3 * (abs((eg - er) - (g - r)) + abs((eg - eb) - (g - b))) + 30 * (over > 0 ? over : 0) + abs(eg - g);
+    if (err < best) best = err, G = k;
+  }
+  const uint16_t out = (uint16_t) (R << 11 | G << 5 | B);
   return out;
 }
