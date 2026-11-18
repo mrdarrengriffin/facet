@@ -25,7 +25,9 @@ Both panels get the same layout; the 480 panel is the reference size and the 720
 ## Day one
 
 - First boot reaches Set up without help: join Wi-Fi, link Home Assistant, land on Home with the factory deck.
-- The screens: Home, Clock, Timer, Light, and a room of lights, Media, Weather, Moon, Calendar, Energy, plus Settings, Set up and toasts.
+- The screens: Home, Clock, Timer, Light, and a room of lights, Media, Weather, Moon, Calendar, Energy, Overhead, Bins,
+  plus Settings, Set up and toasts. Each screen takes its data from a free public source where one exists (Weather,
+  Overhead) or from the Home Assistant integrations the home already has, picked by name.
 - The panel's own editor, opened from the panel's address in a browser: arrange the Homes and their cards, put your
   own screens in order and add or remove them (every built-in screen is always there, opened from a card), set each
   screen's settings (entities, source, options) and Home's header buttons, then save to the panel in one step; the panel checks it and keeps the version before.
@@ -35,8 +37,8 @@ Both panels get the same layout; the 480 panel is the reference size and the 720
 ## What "works" means
 
 The release quality checklist (RELEASING.md), run by Darren on a fresh Waveshare and a fresh Guition. Every line
-is a yes or the release waits. Config backup (#170) is part of 1.0: export and import of the panel's setup from the
-editor.
+is a yes or the release waits. Config backup (#170) is part of 1.0 and in since 0.6: export and import of the panel's
+setup from the editor (Settings > Backup) and `GET /fw/config`.
 
 ## What 1.0 is not
 
