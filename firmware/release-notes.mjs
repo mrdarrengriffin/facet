@@ -183,7 +183,7 @@ export function allChanges(v) {
 }
 
 // the All changes block for <version>: the issues closed as completed in its milestone(s) (a release: X.Y.Z and every
-// X.Y.Z-*, so all its betas; a beta or a fix release: its own), grouped by type label (TYPES: the first group whose
+// X.Y.Z-*, so all its betas; a beta or a fix release: its own, a beta without one its version's X.Y.Z), grouped by type label (TYPES: the first group whose
 // label the issue has; none of them = Other), each "- <title> #N", by number; then the compare link from <from> to the
 // tag. No commits, PRs or area tags: the issues are the list, the compare link is the history.
 const TYPES = [['Breaking changes', 'breaking'], ['Features', 'feature'], ['Fixes', 'bug']];
@@ -191,9 +191,11 @@ export function changes(v, from) {
   // --paginate prints one array per page: join them
   const gh = (args) => JSON.parse(execFileSync('gh', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }).replace(/\]\s*\[/g, ','));
   const stableV = !v.includes('-');
-  const milestones = gh(['api', '--paginate', 'repos/{owner}/{repo}/milestones?state=all&per_page=100'])
-    .filter((m) => m.title === v || (stableV && m.title.startsWith(`${v}-`)));
-  if (!milestones.length) throw new Error(`no milestone named ${v}${stableV ? ` or ${v}-*` : ''}`);
+  const all = gh(['api', '--paginate', 'repos/{owner}/{repo}/milestones?state=all&per_page=100']);
+  let milestones = all.filter((m) => m.title === v || (stableV && m.title.startsWith(`${v}-`)));
+  // a beta with no milestone of its own ships its version's (RELEASING.md "Release day": 0.6.0-beta.1 -> 0.6.0)
+  if (!milestones.length && !stableV) milestones = all.filter((m) => m.title === v.split('-')[0]);
+  if (!milestones.length) throw new Error(`no milestone named ${v}${stableV ? ` or ${v}-*` : ` or ${v.split('-')[0]}`}`);
   const issues = new Map();
   for (const m of milestones) {
     for (const i of gh(['api', '--paginate', `repos/{owner}/{repo}/issues?milestone=${m.number}&state=closed&per_page=100`])) {
