@@ -18,6 +18,12 @@ export default {
       // today's date is real on both (the Clock's "MON 2 NOV"; the fortnight starts today): not sample data
       const now = new Date(), today = new RegExp(`\\b${now.getDate()}\\s+${now.toLocaleString('en-GB', { month: 'short' })}\\b`, 'i');
       for (const w of [...sample]) if (today.test(w)) sample.delete(w);
+      // what the panel works out itself today (source "panel": the Moon) is real on both: today's moon phase may be the
+      // sample's ("Waxing gibbous"), so the words its own real round shows today are not sample data
+      for (const sp of specs.filter((s) => s.params?.source?.default === 'panel')) {
+        await t.mount('spec', { screen: sp.id, source: 'panel' });
+        for (const w of t.texts()) sample.delete(w);
+      }
       t.ok(sample.size > 10, `sample words collected: ${sample.size}`);
       await t.device();
       t.ha.answers = true;
