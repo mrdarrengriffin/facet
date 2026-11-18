@@ -48,7 +48,8 @@ you, the screen goes quiet.
 Facet is one renderer, written in C++ on [LVGL](https://lvgl.io). The same source builds two ways:
 
 - **On the panel**, as an ESPHome external component (`firmware/`). The panel reads Home Assistant
-  itself (weather, calendars, media, lights, energy) and works the moon out on its own.
+  itself (weather, calendars, media, lights, energy), reads free public sources where a screen has one (the weather
+  from Open-Meteo, the aircraft overhead from adsb.lol, no account needed) and works the moon out on its own.
 - **In the browser**, compiled to WebAssembly. The docs site and the workbench use this build, so
   what you see there is pixel for pixel what the panel draws.
 
@@ -61,7 +62,8 @@ arrangement of components you already have.
 
 **Editor.** Every panel serves its own editor at its address: build your Homes card by card on a live copy of the
 panel (add any entity, drag cards to move them, 1 × 1, half, 2 × 1 and 2 × 2 sizes, a state readout), set each built-in screen,
-then save. [Editor docs](https://mrdarrengriffin.github.io/facet/editor/).
+then save. Settings > Backup exports the whole setup to a file and imports it again, on the same panel or another.
+[Editor docs](https://mrdarrengriffin.github.io/facet/editor/).
 
 **Send API.** A panel running Facet has a small HTTP API, so you can show something on it from
 anywhere:
@@ -71,6 +73,7 @@ anywhere:
 | `POST /fw/show` | show a component or screen with props: `{"id": "spec", "props": {"screen": "weather"}}` |
 | `POST /fw/spec` | install a screen spec (`kind: screen`), the panel's set of screens (`kind: deck`), or check one (`kind: check`) |
 | `GET /fw/deck` | the panel's set of screens |
+| `GET /fw/config` | the panel's whole config as one file (screens, cards, settings), the editor's backup; never a password or token |
 | `GET /fw/info`, `/fw/meta` | what the panel runs (with its web reads) and what it can show |
 | `GET /fw/img?path=` | a picture on the panel's Home Assistant (album art), passed through for the editor |
 | `GET /fw/schema` | everything this firmware accepts, in one file (every request is listed there) |
@@ -119,7 +122,7 @@ A running timer as the hero, with one-tap lengths when nothing is running.</p>
 <td width="50%" valign="top">
 <a href="https://mrdarrengriffin.github.io/facet/screens/weather/"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/screen-weather-dark.png"><img alt="Weather screen" src=".github/assets/screen-weather-light.png" width="200"></picture></a>
 <p><a href="https://mrdarrengriffin.github.io/facet/screens/weather/"><b>Weather</b></a><br>
-The temperature, one line, rain in the next hour and the hours ahead.</p>
+The temperature, one line, rain in the next hour and the hours ahead, from Home Assistant or Open-Meteo (no account).</p>
 </td>
 </tr>
 <tr>
@@ -168,8 +171,8 @@ Not screens you add: what every panel has, most of it in Settings.
 |---|---|
 | [Set up](https://mrdarrengriffin.github.io/facet/screens/setup/) | What a new panel shows until it is on Wi-Fi and added to Home Assistant, one step at a time. |
 | [Settings](https://mrdarrengriffin.github.io/facet/screens/settings/) | Every setting on the panel itself: theme, accent, sounds, screens, idle and updates. |
-| [Screens and Home](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > Screens: every screen of the panel, always on, with where its data comes from; tap one for its source and options. |
-| [Idle clock](https://mrdarrengriffin.github.io/facet/screens/idle/) | The Clock without its header, shown when no one has touched the panel for a while, or the album art while music plays. |
+| [Screens and Home](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > Screens: every screen of the panel, always on, with where its data comes from; tap one for its source (a free public one where it exists, then each Home Assistant integration by name) and options. |
+| [Idle clock](https://mrdarrengriffin.github.io/facet/screens/idle/) | The Clock without its header, shown when no one has touched the panel for a while, or the album art while music plays; Home Assistant's Idle now button shows it straight away. |
 | [Home Assistant link](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > Home Assistant: the panel's own link to Home Assistant, its address and token kept on the panel. |
 | [API keys](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > API keys: the keys scripts, automations and agents use to change the panel; you allow each on the glass, and revoke them here. |
 | [Update channels](https://mrdarrengriffin.github.io/facet/screens/settings/) | Settings > Update channel: Release, every finished version; Beta, test builds of the next version; or Dev (nightly). |
