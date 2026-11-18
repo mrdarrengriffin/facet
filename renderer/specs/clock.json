@@ -18,6 +18,13 @@
    "a": "day"
   }
  },
+ "params": {
+  "animated": {
+   "about": "Moves the orbit's dots; the idle clock holds them still (nothing on it moves while the panel idles).",
+   "type": "hidden",
+   "default": "true"
+  }
+ },
  "header": {
   "label": "Clock",
   "back": true
@@ -26,7 +33,9 @@
  "nodes": [
   {
    "c": "clock_orbit",
-   "p": {}
+   "p": {
+    "animated": "$animated"
+   }
   },
   {
    "c": "time",

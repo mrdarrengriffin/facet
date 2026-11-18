@@ -148,7 +148,7 @@ FW_COMPONENT(clock_orbit, "Clock orbit", "components", R"({
   o->base_ms = day_ms(o->fixed);
   o->t0 = lv_tick_get();
   o->reduced = fw::mo::reduced(s);
-  o->still = !(p["animated"] | true);
+  o->still = p["animated"].is<bool>() ? !p["animated"].as<bool>() : !strcmp(p["animated"] | "true", "false");  // a spec param: "false"
   fw::shape(s, p["sample"] | "none");
   sample(o->slot, p["sample"] | "none", o->fixed);
   // frames: often enough for a smooth orbit while moving (a dot moves a px every ~30 ms), once a second when reduced
