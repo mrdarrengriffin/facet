@@ -1202,11 +1202,9 @@ function backupRows(): HTMLElement[] {
   file.onchange = () => { const f = file.files?.[0]; file.value = ''; if (f) void importConfig(f); };
   const im = btn('Import…', 'Load a config file: you see every change before Save', false, () => file.click());
   im.dataset.testid = 'backup-import';
-  const wrap = h('div', 'v1-acts');
-  wrap.append(im, file);
   return [h('h2', 'cap', 'Backup'),
     field('Export', 'This panel\'s screens, cards and settings as one file. No Wi-Fi, keys or tokens.', ex),
-    field('Import', 'Load a file exported from a panel. You see every change before Save.', wrap)];
+    field('Import', 'Load a file exported from a panel. You see every change before Save.', im), file];
 }
 async function exportConfig() {
   const c = (host.config ? await host.config() : null) ?? { facet: 'config', version: CONFIG_VERSION, deck: toDeck(panel.runs, panel.rev), settings: { ...panel.runs.settings } };
@@ -1359,7 +1357,7 @@ function reviewSide(): HTMLElement[] {
   if (imported) {  // an Import: where it came from, and the screens this firmware does not have (left out)
     const n = h('div', `v1-note${imported.skipped.length ? '' : ' ok'}`);
     n.dataset.testid = 'import-note';
-    n.append(h('i', 'dot'), document.createTextNode(`Imported from ${imported.file}. Home Assistant's link stays as it is.` +
+    n.append(document.createTextNode(`Imported from ${imported.file}. Home Assistant's link stays as it is.` +
       (imported.skipped.length ? ` Left out: ${imported.skipped.join(', ')} (not on this panel's firmware).` : '')));
     out.push(n);
   }
