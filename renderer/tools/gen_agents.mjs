@@ -61,7 +61,8 @@ Everything below is served by this panel itself and matches its firmware (catalo
   {"kind":"theme","spec":<theme file>}: make it the panel's sent theme, shown at once ("spec": "" drops it). The format:
   the "themes" part of /schema.json
 - POST /fw/show {"screen":"<id>"}: open a screen
-- GET /fw/deck: the pages this panel runs; GET /fw/info: firmware build; GET /screenshot: the screen as a BMP
+- GET /fw/deck: the pages this panel runs; GET /fw/config: the whole config as one file, the editor's backup
+  ({facet: "config", version: 1, deck, settings}; never a password or token); GET /fw/info: firmware build; GET /screenshot: the screen as a BMP
 
 ## Doing things
 - GET /fw/act: every action this panel can run (fields, limits, one example each)
