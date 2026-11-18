@@ -141,6 +141,8 @@ export function header(S = schema()) {
     `constexpr int N_COLOURS = ${colours.length};`,
     `constexpr const char *COLOURS[] = {${colours.map(cs).join(', ')}};`,
     `constexpr uint32_t COLOUR_V[][2] = {${colours.map((c) => `{${hex(col.colours[c].dark)}, ${hex(col.colours[c].light)}}`).join(', ')}};`,
+    '// a token a theme does not set takes the theme\'s value of the token it follows (colour.json "follows"), -1 = Facet\'s own',
+    `constexpr int COLOUR_FOLLOWS[] = {${colours.map((c) => (col.colours[c].follows ? colours.indexOf(col.colours[c].follows) : -1)).join(', ')}};`,
     `constexpr int N_ROLES = ${roles.length};`,
     `constexpr const char *ROLES[] = {${roles.map(cs).join(', ')}};`,
     `constexpr int ROLE_COLOUR[] = {${roles.map((r) => colours.indexOf(r)).join(', ')}};  // the colour token each accent role is (-1 = none)`,

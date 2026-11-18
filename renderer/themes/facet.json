@@ -14,6 +14,7 @@
   "text-mute": {"dark":"#585E68","light":"#868C95"},
   "line": {"dark":"#22262D","light":"#DDD9D2"},
   "line-hi": {"dark":"#3A404A","light":"#B9B4AB"},
+  "arc-track": {"dark":"#3A404A","light":"#C8C3BA"},
   "blue": {"dark":"#9CC3E6","light":"#2F6A9E"},
   "steel": {"dark":"#4D7092","light":"#6E8FAF"},
   "steel-dim": {"dark":"#2B3F55","light":"#B9C8D6"},

@@ -894,7 +894,10 @@ void compile(Model &M, Skin &S, Errs &E) {
   for (int m = 0; m < 2; m++) {
     if (!M.mode[m]) continue;
     for (int s = 0; s < S.n_sets; s++) {
-      for (int c = 0; c < N_COLOURS; c++) S.palette[m][s][c] = M.col_set[c][m] ? M.col[c][m] : G::COLOUR_V[c][m];
+      for (int c = 0; c < N_COLOURS; c++) {
+        const int f = G::COLOUR_FOLLOWS[c];  // not set: the token it follows, when the theme sets that (arc-track: line-hi)
+        S.palette[m][s][c] = M.col_set[c][m] ? M.col[c][m] : f >= 0 && M.col_set[f][m] ? M.col[f][m] : G::COLOUR_V[c][m];
+      }
       for (int r = 0; r < N_ROLES; r++) if (G::ROLE_COLOUR[r] >= 0) S.palette[m][s][G::ROLE_COLOUR[r]] = M.n_sets ? M.role[s][m][r] : G::SETS[s].v[m][r];
     }
   }

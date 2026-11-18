@@ -2304,6 +2304,16 @@
    "use": "active / pressed outline, ticks"
   },
   {
+   "name": "arc-track",
+   "group": "lines",
+   "type": "colour",
+   "value": {
+    "dark": "#3A404A",
+    "light": "#C8C3BA"
+   },
+   "use": "a progress ring's track under an accent-text arc (3:1 against it in light); a theme that does not set it uses its own line-hi"
+  },
+  {
    "name": "accent",
    "group": "accent",
    "type": "colour",

@@ -5,7 +5,7 @@
 //   box      hugs its contents (a chip is as wide as its words, as the Status chip), at least touch:min tall (h:min, so
 //            the hit area is >= touch:min both ways: C32), the timer-chip style: space 3 in from the outer edge (inside the hair edge), space 3 apart; radius:chip; face surface, hair edge line
 //            (border:line); the theme's control part (C46 part:control, last), so a theme gives it its control look
-//   ring     a mini progress ring (the Pen, w/h:timer-chip-ring 24 / 16): track stroke:edge in line-hi, the share left
+//   ring     a mini progress ring (the Pen, w/h:timer-chip-ring 24 / 16): track stroke:edge in arc-track (lighter than line-hi in light: the arc 3:1 on it), the share left
 //            stroke:chip-arc in accent-text (3:1 on the pressed surface too) from 12 o'clock clockwise, round caps (parts "arc" / "arc-fill")
 //   done     instead of the ring a filled accent disc (timer-chip-ring, radius round, bg:accent-text: 3:1 on accent-dim) with the
 //            icons foundation check (icon size, surface); the face accent-dim and the edge accent
@@ -75,7 +75,7 @@ void draw(const fx::Pen &p) {
   const Chip *c = root ? of(root) : nullptr;
   if (!c) return;
   const int te = fx::size("stroke:edge"), ta = fx::size("stroke:chip-arc");
-  p.arc(p.half - te / 2, 0.0f, 360.0f, "stroke:edge", c->off ? "fg:disabled-ink" : "fg:line-hi", false, "arc");
+  p.arc(p.half - te / 2, 0.0f, 360.0f, "stroke:edge", c->off ? "fg:disabled-ink" : "fg:arc-track", false, "arc");
   if (c->shown <= 0) return;
   p.arc(p.half - ta / 2, START, angle(c->shown), "stroke:chip-arc", c->off ? "fg:disabled-ink" : "fg:accent-text", true, "arc-fill");
 }

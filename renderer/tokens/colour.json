@@ -102,6 +102,13 @@
       "light": "#B9B4AB",
       "role": "active / pressed outline, ticks"
     },
+    "arc-track": {
+      "group": "lines",
+      "dark": "#3A404A",
+      "light": "#C8C3BA",
+      "role": "a progress ring's track under an accent-text arc (3:1 against it in light); a theme that does not set it uses its own line-hi",
+      "follows": "line-hi"
+    },
     "accent": {
       "group": "accent",
       "dark": "#E8542A",
@@ -4262,7 +4269,7 @@
       },
       {
         "section": "timer_chip",
-        "fg": "line-hi",
+        "fg": "arc-track",
         "bg": [
           "surface"
         ],
