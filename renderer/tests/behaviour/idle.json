@@ -1,0 +1,7 @@
+{
+  "id": "idle",
+  "live": true,
+  "live_why": "the idle clock: the Clock screen without its header, its orbit's dots moving with the seconds",
+  "tests": [],
+  "xfail": {}
+}

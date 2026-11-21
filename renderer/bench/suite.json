@@ -212,7 +212,9 @@
     "tile",
     "toast_layer",
     "media_visual",
-    "mascot_mood"
+    "mascot_mood",
+    "clock_orbit",
+    "idle"
   ],
   "cases": [
     {

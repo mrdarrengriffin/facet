@@ -1,7 +1,7 @@
 // Idle clock: what the panel shows after Settings > Idle after with no touch (core/device.cpp "idle"). The Clock
 // screen (specs/clock.json: the orbit, the time and the date) with its Header hidden, so the clock sits in the middle
-// of the screen, and its orbit's dots held still (param animated "false"): nothing redraws while the panel idles but
-// the time each minute. Nothing on it takes a tap: the first touch anywhere is swallowed (the finger's
+// of the screen, its orbit moving as on the Clock screen (a live screen: the bench lets it redraw while idle).
+// Nothing on it takes a tap: the first touch anywhere is swallowed (the finger's
 // release clicks nothing) and goes back to Home. The device fades it in, dims the screen (Idle brightness) and
 // undims when it leaves.
 // Idle shows = Album art (setting idleShow "art"): a Media art over the clock, bound to the Media feed (panel.media:
@@ -27,10 +27,7 @@ void unclick(lv_obj_t *o) {
   for (uint32_t i = 0; i < lv_obj_get_child_count(o); i++) unclick(lv_obj_get_child(o, (int32_t) i));
 }
 void build_idle(lv_obj_t *parent, fw::Props p) {
-  ArduinoJson::JsonDocument op;  // the Clock with its orbit held still: nothing moves while the panel idles (#233)
-  op.set(p);
-  op["animated"] = "false";
-  lv_obj_t *s = fw::spec::build(parent, "clock", op.as<fw::Props>());
+  lv_obj_t *s = fw::spec::build(parent, "clock", p);  // the Clock as it is, its orbit moving (the spec's animated param stays for a still clock)
   if (!s) return;
   if (lv_obj_t *h = lv_obj_get_child(s, 0)) lv_obj_add_flag(h, LV_OBJ_FLAG_HIDDEN);  // the Page's head: the body fills the screen
   unclick(s);
