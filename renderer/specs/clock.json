@@ -20,7 +20,7 @@
  },
  "params": {
   "animated": {
-   "about": "Moves the orbit's dots; the idle clock holds them still (nothing on it moves while the panel idles).",
+   "about": "Moves the orbit's dots (on the Clock screen and the idle clock); false holds them still.",
    "type": "hidden",
    "default": "true"
   }
